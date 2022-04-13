@@ -1,8 +1,5 @@
 # TestRail Reporter for Cypress
 
-[![version](https://img.shields.io/npm/v/cypress-testrail-reporter.svg)](https://www.npmjs.com/package/@mncharlton/cypress-testrail-reporter)
-[![downloads](https://img.shields.io/npm/dt/cypress-testrail-reporter.svg)](https://www.npmjs.com/package/@mncharlton/cypress-testrail-reporter)
-[![MIT License](https://img.shields.io/github/license/Vivify-Ideas/cypress-testrail-reporter.svg)](https://github.com/mncharlton/cypress-testrail-reporter/blob/master/LICENSE.md)
 
 Publishes [Cypress](https://www.cypress.io/) runs on TestRail.
 
