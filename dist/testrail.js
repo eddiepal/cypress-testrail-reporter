@@ -56,7 +56,6 @@ var TestRail = /** @class */ (function () {
         if (this.options.includeAllInTestRun === false) {
             this.includeAll = false;
             this.caseIds = await this.getCases(suiteId);
-            console.error(this.caseIds);
         }
         axios({
             method: "post",
