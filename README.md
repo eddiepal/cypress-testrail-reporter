@@ -6,7 +6,8 @@
 Publishes [Cypress](https://www.cypress.io/) runs on TestRail.
 
 Core features:
-
+- Fixing bug where groupID was throwing and error when used
+- Removed dependency from deasync
 - Test results are aggregated under the same test run if you are executing more spec(test) files and they are belongs to the same suite
 - Results are reported immediately after single test execution (real-time reporting)
 - Test run would be closed after last spec(test) file has been finished
