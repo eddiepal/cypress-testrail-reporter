@@ -162,7 +162,8 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                 Array.prototype.forEach.call(publishedResults , (function (result) {
                     _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
                 }));
-            }else if (publishedResults !== undefined &&
+            }
+            if (publishedResults !== undefined &&
                 this.reporterOptions.allowOnFailureVideoUpload === true &&
                 (status === testrail_interface_1.Status.Failed)) {
                 Array.prototype.forEach.call(publishedResults , (function (result) {
