@@ -130,17 +130,45 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
      * to upload failed screenshot for easier debugging in TestRail
      * Note: Uploading of screenshot is configurable option
      */
-    CypressTestRailReporter.prototype.submitResults = function (status, test, comment) {
+    CypressTestRailReporter.prototype.submitResults = async function (status, test, comment) {
+        var _a;
         var _this = this;
+        var filePath;
+        if(test.invocationDetails !== undefined){
+             filePath = test.invocationDetails.absoluteFile;
+             TestRailCache.store('screenshotPath',filePath)
+        }else{
+            filePath = TestRailCache.retrieve('screenshotPath');
+        }
         var caseIds = shared_1.titleToCaseIds(test.title);
+        var testCasesIds = await _this.serverTestCaseIds;
+        var invalidCaseIds = caseIds.filter(function (caseId) { return !Array.from(testCasesIds).includes(caseId); });
+        caseIds = caseIds.filter(function (caseId) { return Array.from(testCasesIds).includes(caseId); });
+        if (invalidCaseIds.length > 0)
+            TestRailLogger.log("The following test IDs were found in Cypress tests, but not found in Testrail: " + invalidCaseIds);
         if (caseIds.length) {
             var caseResults = caseIds.map(function (caseId) {
-                _this.testRailApi.publishResult({
+                return {
                     case_id: caseId,
                     status_id: status,
-                    comment: "Execution time: " + test.duration + "ms",
-                });
+                    comment: comment,
+                };
             });
+            (_a = this.results).push.apply(_a, caseResults);
+            var publishedResults = await this.testRailApi.publishResults(caseResults);
+            if (publishedResults !== undefined &&
+                this.reporterOptions.allowOnFailureScreenshotUpload === true &&
+                (status === testrail_interface_1.Status.Failed)) {
+                Array.prototype.forEach.call(publishedResults , (function (result) {
+                    _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
+                }));
+            }else if (publishedResults !== undefined &&
+                this.reporterOptions.allowOnFailureVideoUpload === true &&
+                (status === testrail_interface_1.Status.Failed)) {
+                Array.prototype.forEach.call(publishedResults , (function (result) {
+                    _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
+                }));
+            }
         }
     };
     return CypressTestRailReporter;

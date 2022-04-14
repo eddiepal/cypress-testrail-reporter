@@ -6,19 +6,19 @@
 Publishes [Cypress](https://www.cypress.io/) runs on TestRail.
 
 Core features:
-- Fixing bugs 
-- Removed dependency from deasync
+- No dependency from deasync
 - Test results are aggregated under the same test run if you are executing more spec(test) files and they are belongs to the same suite
 - Results are reported immediately after single test execution (real-time reporting)
 - Test run would be closed after last spec(test) file has been finished
 - Possibility to upload screenshots for failed and retried test cases - optional (**allowFailedScreenshotUpload: true**)
+- Possibility to upload videos for failed, retried and passed test cases - optional (**allowVideoUpload: true**)
 - Multi suite project support (set **suiteId=1** in **cypress.json** or set it as a part of runtime environment variables as **testRailSuiteId=1**)
 - Reporting retest status of a test cases - handy in terms of marking tests as flaky (test is reported with retest status for the first try and after second try it passes) Note: cypress retry logic must be enabled for this feature.
 
 ## Install
 
 ```shell
-$ npm install cypress-testrail-reporter --save-dev
+$ npm install @mkonate/cypress-testrail-reporter --save-dev
 ```
 
 ## Usage
@@ -67,6 +67,8 @@ environment variables, this option would be overwritten with it.
 **disableDescription**: _bool_ (optional: default is false) possibility to disable description for test run in case that someone don’t have cypress dashboard feature (_disableDescription: true_)
 
 **allowFailedScreenshotUpload**: _bool_ (optional: default is false) will upload failed screenshot to corresponding test result comment for easier debugging of failure.
+
+**allowVideotUpload**: _bool_ (optional: default is false) will upload a video of the test to the  corresponding test result comment
 
 **includeAllInTestRun**: _bool_ (optional: default is true) will return all test cases in test run. set to false to return test runs based on filter or section/group.
 

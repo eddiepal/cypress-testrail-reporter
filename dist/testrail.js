@@ -109,27 +109,7 @@ var TestRail = /** @class */ (function () {
             console.error(error);
         });
     };
-    TestRail.prototype.publishResult = function (results) {
-        this.runId = TestRailCache.retrieve("runId");
-        axios
-            .post(this.base + "/add_results_for_cases/" + this.runId, {
-            results: [
-                {
-                    case_id: results.case_id,
-                    status_id: results.status_id,
-                    comment: results.comment,
-                },
-            ],
-        }, {
-            auth: {
-                username: this.options.username,
-                password: this.options.password,
-            },
-        })
-            .catch(function (error) {
-            console.error(error);
-        });
-    };
+
     TestRail.prototype.uploadAttachment = function (resultId, path) {
         var form = new FormData();
         form.append("attachment", fs.createReadStream(path));
@@ -145,9 +125,10 @@ var TestRail = /** @class */ (function () {
         });
     };
     // This function will attach failed screenshot on each test result(comment) if founds it
-    TestRail.prototype.uploadScreenshots = function (caseId, resultId) {
+    TestRail.prototype.uploadScreenshots = function (caseId, resultId, _path) {
         var _this = this;
-        var SCREENSHOTS_FOLDER_PATH = path.join(__dirname, "cypress/screenshots");
+        var SCREENSHOTS_FOLDER_PATH = _path.replace('integration','screenshots');
+
         fs.readdir(SCREENSHOTS_FOLDER_PATH, function (err, files) {
             if (err) {
                 return console.log("Unable to scan screenshots folder: " + err);
@@ -155,10 +136,30 @@ var TestRail = /** @class */ (function () {
             files.forEach(function (file) {
                 if (file.includes("C" + caseId) && /(failed|attempt)/g.test(file)) {
                     try {
-                        _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file);
+                        _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
                     }
                     catch (err) {
                         console.log("Screenshot upload error: ", err);
+                    }
+                }
+            });
+        });
+    };
+    TestRail.prototype.uploadVideos = function (caseId, resultId, _path) {
+        var _this = this;
+        var vPath = _path.replace('integration','videos');
+        var VIDEOS_FOLDER_PATH = vPath.replace(/([^\/]*js)$/g, '');
+        fs.readdir(VIDEOS_FOLDER_PATH, function (err, files) {
+            if (err) {
+                return console.log("Unable to scan videos folder: " + err);
+            }
+            files.forEach(function (file) {
+                if (file.includes("mp4") ){
+                    try {
+                        _this.uploadAttachment(resultId, VIDEOS_FOLDER_PATH +'/'+ file);
+                    }
+                    catch (err) {
+                        console.log("Video upload error: ", err);
                     }
                 }
             });
