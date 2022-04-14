@@ -11,7 +11,7 @@ Core features:
 - Results are reported immediately after single test execution (real-time reporting)
 - Test run would be closed after last spec(test) file has been finished
 - Possibility to upload screenshots for failed  test cases - optional (**allowOnFailureScreenshotUpload: true**)
-- Possibility to upload videos for failedtest cases - optional (**allowOnFailureVideoUpload: true**)
+- Possibility to upload videos for failed test cases - optional (**allowOnFailureVideoUpload: true**)
 - Multi suite project support (set **suiteId=1** in **cypress.json** or set it as a part of runtime environment variables as **testRailSuiteId=1**)
 - Reporting retest status of a test cases - handy in terms of marking tests as flaky (test is reported with retest status for the first try and after second try it passes) Note: cypress retry logic must be enabled for this feature.
 
