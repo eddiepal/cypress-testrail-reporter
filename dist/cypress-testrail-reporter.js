@@ -104,7 +104,10 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                         }
                     }
                     TestRailLogger.log("Creating TestRail Run with name: " + name_1);
-                    _this.testRailApi.createRun(name_1, description, _this.suiteId);
+                    _this.testRailApi.createRun(name_1, _this.reporterOptions.host, description, _this.suiteId);
+
+
+
                 }
                 else {
                     // use the cached TestRail Run ID
@@ -121,6 +124,7 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
             runner.on('retry', function (test) {
                 _this.submitResults(testrail_interface_1.Status.Retest, test, 'Cypress retry logic has been triggered!');
             });
+
         }
         return _this;
     }
@@ -171,6 +175,7 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                 }));
             }
         }
+
     };
     return CypressTestRailReporter;
 }(mocha_1.reporters.Spec));

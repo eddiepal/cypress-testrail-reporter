@@ -66,9 +66,9 @@ environment variables, this option would be overwritten with it.
 
 **disableDescription**: _bool_ (optional: default is false) possibility to disable description for test run in case that someone don’t have cypress dashboard feature (_disableDescription: true_)
 
-**allowOnFailureScreenshotUpload**: _bool_ (optional: default is false) will upload failed screenshot to corresponding test result comment for easier debugging of failure.
+**allowOnFailureScreenshotUpload**: _bool_ (optional: default is false) will upload failed screenshot to corresponding test result comment for easier debugging of failure. (Required: `screenshotOnRunFailure` option must be set to true in cypress.json )
 
-**allowOnFailureVideoUpload**: _bool_ (optional: default is false) will upload a video of the test to the  corresponding test result comment
+**allowOnFailureVideoUpload**: _bool_ (optional: default is false) will upload a video of the test to the  corresponding test result comment. (Required: `video` option must be set to true in cypress.json )
 
 **includeAllInTestRun**: _bool_ (optional: default is true) will return all test cases in test run. set to false to return test runs based on filter or section/group.
 

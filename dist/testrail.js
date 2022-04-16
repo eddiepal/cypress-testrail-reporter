@@ -18,6 +18,7 @@ var path = require("path");
 var FormData = require("form-data");
 var TestRailLogger = require("./testrail.logger");
 var TestRailCache = require("./testrail.cache");
+const chalk = require("chalk");
 var TestRail = /** @class */ (function () {
     function TestRail(options) {
         this.options = options;
@@ -51,8 +52,9 @@ var TestRail = /** @class */ (function () {
         })
             .catch(function (error) { return console.error(error); });
     };
-    TestRail.prototype.createRun = async function (name, description, suiteId) {
+    TestRail.prototype.createRun = async function (name, host, description, suiteId) {
         var _this = this;
+        var _host = host;
         if (this.options.includeAllInTestRun === false) {
             this.includeAll = false;
             this.caseIds = await this.getCases(suiteId);
@@ -77,6 +79,8 @@ var TestRail = /** @class */ (function () {
             _this.runId = response.data.id;
             // cache the TestRail Run ID
             TestRailCache.store("runId", _this.runId);
+            var path = "runs/view/" + _this.runId;
+            TestRailLogger.log("Results are published to " + chalk.magenta(_host + "/index.php?/" + path));
         })
             .catch(function (error) { return console.error(error); });
     };
@@ -113,7 +117,7 @@ var TestRail = /** @class */ (function () {
     TestRail.prototype.uploadAttachment = function (resultId, path) {
         var form = new FormData();
         form.append("attachment", fs.createReadStream(path));
-        axios({
+        return axios({
             method: "post",
             url: this.base + "/add_attachment_to_result/" + resultId,
             headers: __assign({}, form.getHeaders()),
@@ -149,21 +153,22 @@ var TestRail = /** @class */ (function () {
         var _this = this;
         var vPath = _path.replace('integration','videos');
         var VIDEOS_FOLDER_PATH = vPath.replace(/([^\/]*js)$/g, '');
-        fs.readdir(VIDEOS_FOLDER_PATH, function (err, files) {
-            if (err) {
-                return console.log("Unable to scan videos folder: " + err);
-            }
-            files.forEach(function (file) {
-                if (file.includes("mp4") ){
-                    try {
-                        _this.uploadAttachment(resultId, VIDEOS_FOLDER_PATH +'/'+ file);
-                    }
-                    catch (err) {
-                        console.log("Video upload error: ", err);
-                    }
-                }
-            });
-        });
+        var vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
+
+        const { fork } = require('child_process');
+        const child = fork(__dirname + '/publishVideo.js', {
+              detached:true,
+              stdio: 'inherit',
+              env: Object.assign(process.env, {
+                   vName:vidName,
+                   vFolder:VIDEOS_FOLDER_PATH,
+                   resId: resultId,
+                   base:this.base,
+                   username: this.options.username,
+                   pwd: this.options.password
+               })
+        }).unref();
+
     };
     TestRail.prototype.closeRun = function () {
         this.runId = TestRailCache.retrieve("runId");
