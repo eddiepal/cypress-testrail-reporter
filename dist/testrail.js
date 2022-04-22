@@ -149,6 +149,25 @@ var TestRail = /** @class */ (function () {
             });
         });
     };
+    TestRail.prototype.uploadDownloads = function (caseId, resultId, _path) {
+        var _this = this;
+        var DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + "cypress/downloads";
+
+        fs.readdir(DOWNLOADS_FOLDER_PATH, function (err, files) {
+            if (err) {
+                return console.log("Unable to scan downloads folder: " + err);
+            }
+            files.forEach(function (file) {
+                    try {
+                        _this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
+                    }
+                    catch (err) {
+                        console.log("Download upload error: ", err);
+                    }
+
+            });
+        });
+    };
     TestRail.prototype.uploadVideos = function (caseId, resultId, _path) {
         var _this = this;
         var vPath = _path.replace('integration','videos');

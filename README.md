@@ -12,6 +12,7 @@ Core features:
 - Test run would be closed after last spec(test) file has been finished
 - Possibility to upload screenshots for failed  test cases - optional (**allowOnFailureScreenshotUpload: true**)
 - Possibility to upload videos for failed test cases - optional (**allowOnFailureVideoUpload: true**)
+- Possibility to upload downloads folder for all test cases - optional (**allowExportDownloads: true**)
 - Multi suite project support (set **suiteId=1** in **cypress.json** or set it as a part of runtime environment variables as **testRailSuiteId=1**)
 - Reporting retest status of a test cases - handy in terms of marking tests as flaky (test is reported with retest status for the first try and after second try it passes) Note: cypress retry logic must be enabled for this feature.
 
@@ -69,6 +70,8 @@ environment variables, this option would be overwritten with it.
 **allowOnFailureScreenshotUpload**: _bool_ (optional: default is false) will upload failed screenshot to corresponding test result comment for easier debugging of failure. (Required: `screenshotOnRunFailure` option must be set to true in cypress.json )
 
 **allowOnFailureVideoUpload**: _bool_ (optional: default is false) will upload a video of the test to the  corresponding test result comment. (Required: `video` option must be set to true in cypress.json )
+
+**allowExportDownloads** : _bool_ (optional: default is false) will upload the cypress downloads folder to the test run. (**Note** : This setting is useful if you are downloading files in your automated tests. Be advised that you have the resposability to cleanup your cypress downloads folder) 
 
 **includeAllInTestRun**: _bool_ (optional: default is true) will return all test cases in test run. set to false to return test runs based on filter or section/group.
 

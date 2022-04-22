@@ -174,6 +174,12 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                     _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
                 }));
             }
+            if (publishedResults !== undefined &&
+                this.reporterOptions.allowExportDownloads === true ) {
+                Array.prototype.forEach.call(publishedResults , (function (result) {
+                    _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
+                }));
+            }
         }
 
     };
