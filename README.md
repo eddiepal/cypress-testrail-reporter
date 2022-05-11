@@ -5,14 +5,16 @@
 
 Publishes [Cypress](https://www.cypress.io/) runs on TestRail.
 
-Core features:
-- No dependency from deasync
-- Test results are aggregated under the same test run if you are executing more spec(test) files and they are belongs to the same suite
-- Results are reported immediately after single test execution (real-time reporting)
-- Test run would be closed after last spec(test) file has been finished
-- Possibility to upload screenshots for failed  test cases - optional (**allowOnFailureScreenshotUpload: true**)
+### New Features
 - Possibility to upload videos for failed test cases - optional (**allowOnFailureVideoUpload: true**)
 - Possibility to upload downloads folder for all test cases - optional (**allowExportDownloads: true**)
+- Possibility to aggreagate multiple sections of a same test suite to one test run (**see groupId option**)
+  
+### Core features:
+- No dependency from deasync
+- Test results are aggregated under the same test run if you are executing more spec(test) files and they are belongs to the same suite
+- Results are reported immediately after single test execution (real-time reporting) except the video recording which is reported at the end
+- Possibility to upload screenshots for failed  test cases - optional (**allowOnFailureScreenshotUpload: true**)
 - Multi suite project support (set **suiteId=1** in **cypress.json** or set it as a part of runtime environment variables as **testRailSuiteId=1**)
 - Reporting retest status of a test cases - handy in terms of marking tests as flaky (test is reported with retest status for the first try and after second try it passes) Note: cypress retry logic must be enabled for this feature.
 
@@ -75,7 +77,7 @@ environment variables, this option would be overwritten with it.
 
 **includeAllInTestRun**: _bool_ (optional: default is true) will return all test cases in test run. set to false to return test runs based on filter or section/group.
 
-**groupId**: _string_ (optional: needs "includeAllInTestRun": false ) The ID of the section/group. When you set `CYPRESS_TESTRAIL_REPORTER_GROUPID` in runtime environment variables, this option would be overwritten with it.
+**groupId**: _string_ (optional: needs "includeAllInTestRun": false ) A comma separated list of IDs of the sections/groups. When you set `CYPRESS_TESTRAIL_REPORTER_GROUPID` in runtime environment variables, this option would be overwritten with it.
 
 **filter**: _string_ (optional: needs "includeAllInTestRun": false) Only return cases with matching filter string in the case title
 
