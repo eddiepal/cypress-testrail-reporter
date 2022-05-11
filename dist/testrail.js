@@ -27,10 +27,10 @@ var TestRail = /** @class */ (function () {
         this.base = options.host + "/index.php?/api/v2";
         this.runId;
     }
-    TestRail.prototype.getCases =  function (suiteId) {
+    TestRail.prototype.getCases =  function (suiteId,groupId) {
         var url = this.base + "/get_cases/" + this.options.projectId + "&suite_id=" + suiteId;
-        if (this.options.groupId) {
-            url += "&section_id=" + this.options.groupId;
+        if (groupId) {
+            url += "&section_id=" + groupId;
         }
         if (this.options.filter) {
             url += "&filter=" + this.options.filter;
@@ -55,10 +55,16 @@ var TestRail = /** @class */ (function () {
     TestRail.prototype.createRun = async function (name, host, description, suiteId) {
         var _this = this;
         var _host = host;
+        var groupId = this.options.groupId;
+        var groupIDS = groupId.split(',');
         if (this.options.includeAllInTestRun === false) {
             this.includeAll = false;
-            this.caseIds = await this.getCases(suiteId);
+            for (let i = 0 ; i < groupIDS.length ; i++){
+                var subcaseids = await this.getCases(suiteId, groupIDS[i]);
+                this.caseIds = Array.prototype.concat(this.caseIds, subcaseids);
+            }
         }
+
         axios({
             method: "post",
             url: this.base + "/add_run/" + this.options.projectId,
