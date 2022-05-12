@@ -55,14 +55,20 @@ var TestRail = /** @class */ (function () {
     TestRail.prototype.createRun = async function (name, host, description, suiteId) {
         var _this = this;
         var _host = host;
-        var groupId = this.options.groupId;
-        var groupIDS = groupId.split(',');
+        var listGroupIds = this.options.groupId;
+
         if (this.options.includeAllInTestRun === false) {
             this.includeAll = false;
-            for (let i = 0 ; i < groupIDS.length ; i++){
-                var subcaseids = await this.getCases(suiteId, groupIDS[i]);
-                this.caseIds = Array.prototype.concat(this.caseIds, subcaseids);
+            if (listGroupIds){
+                var groupIDS = listGroupIds.split(',');
+                for (let i = 0 ; i < groupIDS.length ; i++){
+                    var subcaseids = await this.getCases(suiteId, groupIDS[i]);
+                    this.caseIds = Array.prototype.concat(this.caseIds, subcaseids);
+                }
+            }else{
+                this.caseIds = await this.getCases(suiteId, null)
             }
+
         }
 
         axios({
@@ -214,4 +220,3 @@ var TestRail = /** @class */ (function () {
     return TestRail;
 }());
 exports.TestRail = TestRail;
-//# sourceMappingURL=testrail.js.map
