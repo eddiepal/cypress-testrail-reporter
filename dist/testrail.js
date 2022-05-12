@@ -110,6 +110,7 @@ var TestRail = /** @class */ (function () {
     };
     TestRail.prototype.publishResults = function (results) {
         this.runId = TestRailCache.retrieve("runId");
+        var _res = results;
         return axios({
             method: "post",
             url: this.base + "/add_results_for_cases/" + this.runId,
@@ -122,7 +123,7 @@ var TestRail = /** @class */ (function () {
         })
             .then(function (response) { return response.data; })
             .catch(function (error) {
-            console.error(error);
+                TestRailLogger.log("Test case "+_res[0].case_id+ " was not found in the test run");
         });
     };
 

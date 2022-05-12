@@ -9,6 +9,7 @@ Publishes [Cypress](https://www.cypress.io/) runs on TestRail.
 - Possibility to upload videos for failed test cases - optional (**allowOnFailureVideoUpload: true**)
 - Possibility to upload downloads folder for all test cases - optional (**allowExportDownloads: true**)
 - Possibility to aggreagate multiple sections of a same test suite to one test run (**see groupId option**)
+- Possibility to precise the runId of a manually created test run on Testrail(**see runId option**)
   
 ### Core features:
 - No dependency from deasync
@@ -80,6 +81,8 @@ environment variables, this option would be overwritten with it.
 **groupId**: _string_ (optional: needs "includeAllInTestRun": false ) A comma separated list of IDs of the sections/groups. When you set `CYPRESS_TESTRAIL_REPORTER_GROUPID` in runtime environment variables, this option would be overwritten with it.
 
 **filter**: _string_ (optional: needs "includeAllInTestRun": false) Only return cases with matching filter string in the case title
+
+**runId**: _number_ will aggregate the test cases to the test run ID entered. When you set `CYPRESS_TESTRAIL_REPORTER_RUNID` in runtime environment variables, this option would be overwritten with it.
 
 ## Multiple suite
 

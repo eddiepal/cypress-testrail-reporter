@@ -60,6 +60,9 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
         if (_this.reporterOptions.suiteId) {
             _this.suiteId = _this.reporterOptions.suiteId;
         }
+        if (_this.reporterOptions.runId) {
+            TestRailCache.store('runId', _this.reporterOptions.runId);
+        }
         /**
          * This will validate runtime environment variables
          * if we are passing suiteId as a part of runtime env variables we assign that value to variable
@@ -105,8 +108,6 @@ var CypressTestRailReporter = /** @class */ (function (_super) {
                     }
                     TestRailLogger.log("Creating TestRail Run with name: " + name_1);
                     _this.testRailApi.createRun(name_1, _this.reporterOptions.host, description, _this.suiteId);
-
-
 
                 }
                 else {
