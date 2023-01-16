@@ -27,8 +27,13 @@ var TestRail = /** @class */ (function () {
         this.base = options.host + "/index.php?";
         this.runId;
     }
-    TestRail.prototype.getCases =  function (suiteId, groupId) {
+    TestRail.prototype.getCases = async function (suiteId, groupId) {
         var url = this.base + "/get_cases/" + this.options.projectId + "&suite_id=" + suiteId;
+        var initialUrl = this.urlToPage; TODO:
+        var caseIdArray = []; TODO:
+        var nextPage = ""; TODO:
+        var newUrl = ""; TODO:
+
         if (groupId) {
             url += "&section_id=" + groupId;
         }
@@ -38,19 +43,26 @@ var TestRail = /** @class */ (function () {
         if (this.options.typeId) {
             url += "&type_id=" + this.options.typeId;
         }
-        return axios({
-            method: "get",
-            url: url,
-            headers: { "Content-Type": "application/json" },
-            auth: {
-                username: this.options.username,
-                password: this.options.password,
-            },
-        })
-            .then(function (response) {
-            return response.data.cases.map(function (item) { return item.id; });
-        })
-            .catch(function (error) { return console.error(error); });
+        
+        newUrl = url + "&limit=250&offset=0"
+
+        while (nextPage != null) {
+            await axios({
+                method: "get",
+                url: newUrl,
+                headers: { "Content-Type": "application/json" },
+                auth: {
+                    username: this.options.username,
+                    password: this.options.password,
+                },
+            }).then( function (response) {
+                nextPage = response.data._links.next;
+                caseIdArray = caseIdArray.concat(response.data.cases.map(function (item) { return item.id; }));
+                newUrl = initialUrl + nextPage;
+            })
+                .catch(function (error) { return console.error(error); });
+        }
+        return caseIdArray;
     };
     TestRail.prototype.createRun = async function (name, host, description, suiteId) {
         var _this = this;
