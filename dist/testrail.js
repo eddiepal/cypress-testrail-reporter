@@ -24,10 +24,10 @@ var TestRail = /** @class */ (function () {
         this.options = options;
         this.includeAll = true;
         this.caseIds = [];
-        this.base = options.host + "/index.php?/api/v2";
+        this.base = options.host + "/index.php?";
         this.runId;
     }
-    TestRail.prototype.getCases =  function (suiteId,groupId) {
+    TestRail.prototype.getCases =  function (suiteId, groupId) {
         var url = this.base + "/get_cases/" + this.options.projectId + "&suite_id=" + suiteId;
         if (groupId) {
             url += "&section_id=" + groupId;
@@ -60,7 +60,7 @@ var TestRail = /** @class */ (function () {
         if (this.options.includeAllInTestRun === false) {
             this.includeAll = false;
             if (listGroupIds){
-                var groupIDS = listGroupIds.split(',');
+                var groupIDS = listGroupIds.toString().split(',');
                 for (let i = 0 ; i < groupIDS.length ; i++){
                     var subcaseids = await this.getCases(suiteId, groupIDS[i]);
                     this.caseIds = Array.prototype.concat(this.caseIds, subcaseids);
