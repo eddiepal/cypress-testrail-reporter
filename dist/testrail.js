@@ -29,10 +29,10 @@ var TestRail = /** @class */ (function () {
     }
     TestRail.prototype.getCases = async function (suiteId, groupId) {
         var url = this.base + "/get_cases/" + this.options.projectId + "&suite_id=" + suiteId;
-        var initialUrl = this.urlToPage; TODO:
-        var caseIdArray = []; TODO:
-        var nextPage = ""; TODO:
-        var newUrl = ""; TODO:
+        var initialUrl = this.urlToPage;
+        var caseIdArray = [];
+        var nextPage = "";
+        var newUrl = "";
 
         if (groupId) {
             url += "&section_id=" + groupId;
