@@ -204,43 +204,44 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
    * @return {class}
  */
   CypressTestRailReporter.prototype.submitResults = async function() {
-    let _a;
-    const _this = this;
-    let filePath;
-    if (test.invocationDetails !== undefined) {
-      filePath = test.invocationDetails.absoluteFile;
-      TestRailCache.store('screenshotPath', filePath);
-    } else {
-      filePath = TestRailCache.retrieve('screenshotPath');
-    }
+    // TODO: refactor to work with request changes
+    // let _a;
+    // const _this = this;
+    // let filePath;
+    // if (test.invocationDetails !== undefined) {
+    //   filePath = test.invocationDetails.absoluteFile;
+    //   TestRailCache.store('screenshotPath', filePath);
+    // } else {
+    //   filePath = TestRailCache.retrieve('screenshotPath');
+    // }
 
     if (invalidCaseIds.length > 0) {
       TestRailLogger.log(
           'The following test IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
     }
-
-    (_a = this.results).push.apply(_a, caseResults);
-    const publishedResults = await this.testRailApi.publishResults(caseResults);
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowOnFailureScreenshotUpload === true &&
-                (status === testRailInterface1.Status.Failed)) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
-      }));
-    }
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowOnFailureVideoUpload === true &&
-                (status === testRailInterface1.Status.Failed)) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
-      }));
-    }
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowExportDownloads === true ) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
-      }));
-    }
+    // TODO: refactor to work with request changes
+    // (_a = this.results).push.apply(_a, caseResults);
+    // const publishedResults = await this.testRailApi.publishResults(caseResults);
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowOnFailureScreenshotUpload === true &&
+    //             (status === testRailInterface1.Status.Failed)) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
+    //   }));
+    // }
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowOnFailureVideoUpload === true &&
+    //             (status === testRailInterface1.Status.Failed)) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
+    //   }));
+    // }
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowExportDownloads === true ) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
+    //   }));
+    // }
   };
   return CypressTestRailReporter;
 }(mocha1.reporters.Spec));
