@@ -7,6 +7,9 @@
 # More details at https://github.com/eslint/eslint
 # and https://eslint.org
 
+# --format @microsoft/eslint-formatter-sarif
+# --output-file eslint-results.sarif
+
 name: ESLint
 
 on:
@@ -41,8 +44,6 @@ jobs:
           --config .eslintrc.js
           --ext .js,.jsx,.ts,.tsx
           --rule 'max-len:[error, {code:120}]' --rule 'linebreak-style:[error, windows]'
-          --format @microsoft/eslint-formatter-sarif
-          --output-file eslint-results.sarif
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
