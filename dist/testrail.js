@@ -22,6 +22,7 @@ const FormData = require('form-data');
 const TestRailLogger = require('./testrail.logger');
 const TestRailCache = require('./testrail.cache');
 const chalk = require('chalk');
+const deasync = require('deasync');
 const TestRail = /** @class */ (function() {
   /**
    * @param {string} options Reporter options.
@@ -137,36 +138,34 @@ const TestRail = /** @class */ (function() {
   TestRail.prototype.publishResults = function(results) {
     this.runId = TestRailCache.retrieve('runId');
     const _res = results;
-    return axios({
-      method: 'post',
-      url: this.base + '/add_results_for_cases/' + this.runId,
-      headers: {'Content-Type': 'application/json'},
-      auth: {
-        username: this.options.username,
-        password: this.options.password,
-      },
-      data: JSON.stringify({results: results}),
-    })
-        .then(function(response) {
-          return response.data;
-        })
-        .catch(function(error) {
-          TestRailLogger.log('Test case '+_res[0].case_id+ ' was not found in the test run');
-        });
-  };
+    let done = false;
+    TestRailLogger.log(this.runId);
+    TestRailLogger.log('Add test results to TestRail...');
 
-  TestRail.prototype.uploadAttachment = function(resultId, path) {
-    const form = new FormData();
-    form.append('attachment', fs.createReadStream(path));
-    return axios({
-      method: 'post',
-      url: this.base + '/add_attachment_to_result/' + resultId,
-      headers: __assign({}, form.getHeaders()),
-      auth: {
-        username: this.options.username,
-        password: this.options.password,
-      },
-      data: form,
+    (() => {
+      return axios({
+        method: 'post',
+        url: this.base + '/add_results_for_cases/' + this.runId,
+        headers: {'Content-Type': 'application/json'},
+        auth: {
+          username: this.options.username,
+          password: this.options.password,
+        },
+        data: JSON.stringify({results: results}),
+      })
+          .then(function(response) {
+            TestRailLogger.log('Test cases submitted to test run.');
+            done = true;
+            return response.data;
+          })
+          .catch(function(error) {
+            TestRailLogger.log(error);
+            done = true;
+            // TestRailLogger.log('Test case '_res[0].case_id ' was not found in the test run');
+          });
+    })();
+    require('deasync').loopWhile(function() {
+      return !done;
     });
   };
   // This function will attach failed screenshot on each test result(comment) if founds it

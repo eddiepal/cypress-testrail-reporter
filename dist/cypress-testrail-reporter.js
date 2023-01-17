@@ -35,8 +35,8 @@ const testRailValidation1 = require('./testrail.validation');
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
 const runCounter = 1;
-const caseResults = [];
-let invalidCaseIds;
+let caseResults = [];
+let caseIDs = [];
 
 const CypressTestRailReporter = /** @class */ (function(_super) {
   __extends(CypressTestRailReporter, _super);
@@ -136,6 +136,7 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
       });
       runner.on('end', function() {
         _this.submitResults();
+        caseResults = [];
       });
       runner.on('pass', function(test) {
         _this.addToResults(testRailInterface1.Status.Passed, test, 'Execution time: ' + test.duration + 'ms');
@@ -156,11 +157,39 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
    * @param {string} comment The test comment.
  */
   CypressTestRailReporter.prototype.addToResults = async function(status, test, comment) {
-    let caseIds = shared1.titleToCaseIds(test.title);
-    let caseResult = {};
+    const caseID = shared1.titleToCaseIds(test.title)[0];
+    caseIDs.push(caseID);
 
+    const caseResult = {
+      case_id: caseID,
+      status_id: status,
+      comment: comment,
+    };
+
+    caseResults.push(caseResult);
+  };
+
+  /**
+   * Ensure that after each test results are reported continuously
+   * Additionally to that if test status is failed or retried there is possibility
+   * to upload failed screenshot for easier debugging in TestRail
+   * Note: Uploading of screenshot is configurable option
+   * @return {any}
+ */
+  CypressTestRailReporter.prototype.submitResults = async function() {
+    // TODO: refactor to work with request changes
+    // let _a;
+    // const _this = this;
+    // let filePath;
     const listGroupIds = this.reporterOptions.groupId;
     let serverCaseIds = [];
+
+    // if (test.invocationDetails !== undefined) {
+    //   filePath = test.invocationDetails.absoluteFile;
+    //   TestRailCache.store('screenshotPath', filePath);
+    // } else {
+    //   filePath = TestRailCache.retrieve('screenshotPath');
+    // }
 
     if (this.reporterOptions.includeAllInTestRun === false) {
       if (listGroupIds) {
@@ -176,71 +205,41 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
       serverCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, null);
     }
 
-    invalidCaseIds = caseIds.filter(function(caseId) {
+    const invalidCaseIds = caseIds.filter(function(caseId) {
       return !Array.from(serverCaseIds).includes(caseId);
     });
-    caseIds = caseIds.filter(function(caseId) {
+    const validCaseIDs = caseIds.filter(function(caseId) {
       return Array.from(serverCaseIds).includes(caseId);
     });
 
-    if (caseIds.length) {
-      caseResult = caseIds.map(function(caseId) {
-        return {
-          case_id: caseId,
-          status_id: status,
-          comment: comment,
-        };
-      });
-    }
-
-    caseResults.push(caseResult);
-  };
-
-  /**
-   * Ensure that after each test results are reported continuously
-   * Additionally to that if test status is failed or retried there is possibility
-   * to upload failed screenshot for easier debugging in TestRail
-   * Note: Uploading of screenshot is configurable option
-   * @return {class}
- */
-  CypressTestRailReporter.prototype.submitResults = async function() {
-    let _a;
-    const _this = this;
-    let filePath;
-    if (test.invocationDetails !== undefined) {
-      filePath = test.invocationDetails.absoluteFile;
-      TestRailCache.store('screenshotPath', filePath);
-    } else {
-      filePath = TestRailCache.retrieve('screenshotPath');
-    }
-
     if (invalidCaseIds.length > 0) {
       TestRailLogger.log(
-          'The following test IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
+          'The following case IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
     }
-
-    (_a = this.results).push.apply(_a, caseResults);
-    const publishedResults = await this.testRailApi.publishResults(caseResults);
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowOnFailureScreenshotUpload === true &&
-                (status === testRailInterface1.Status.Failed)) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
-      }));
-    }
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowOnFailureVideoUpload === true &&
-                (status === testRailInterface1.Status.Failed)) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
-      }));
-    }
-    if (publishedResults !== undefined &&
-                this.reporterOptions.allowExportDownloads === true ) {
-      Array.prototype.forEach.call(publishedResults, (function(result) {
-        _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
-      }));
-    }
+    // TODO: refactor to work with request changes
+    // (_a = this.results).push.apply(_a, caseResults);
+    const publishedResults = await this.testRailApi.publishResults(caseResults.filter(
+        (x) => validCaseIDs.includes(x.case_id)));
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowOnFailureScreenshotUpload === true &&
+    //             (status === testRailInterface1.Status.Failed)) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
+    //   }));
+    // }
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowOnFailureVideoUpload === true &&
+    //             (status === testRailInterface1.Status.Failed)) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
+    //   }));
+    // }
+    // if (publishedResults !== undefined &&
+    //             this.reporterOptions.allowExportDownloads === true ) {
+    //   Array.prototype.forEach.call(publishedResults, (function(result) {
+    //     _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
+    //   }));
+    // }
   };
   return CypressTestRailReporter;
 }(mocha1.reporters.Spec));
