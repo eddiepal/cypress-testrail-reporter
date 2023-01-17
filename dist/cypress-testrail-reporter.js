@@ -35,6 +35,9 @@ const testRailValidation1 = require('./testrail.validation');
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
 const runCounter = 1;
+const caseResults = [];
+let invalidCaseIds;
+
 const CypressTestRailReporter = /** @class */ (function(_super) {
   __extends(CypressTestRailReporter, _super);
   /**
@@ -68,10 +71,10 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
     _this.testRailValidation = new testRailValidation1.TestRailValidation(_this.reporterOptions);
 
     /**
-         * This will validate reporter options defined in cypress.json file
-         * if we are passing suiteId as a part of this file than we assign value to variable
-         * usually this is the case for single suite projects
-         */
+     * This will validate reporter options defined in cypress.json file
+     * if we are passing suiteId as a part of this file than we assign value to variable
+     * usually this is the case for single suite projects
+     */
     _this.testRailValidation.validateReporterOptions(_this.reporterOptions);
     if (_this.reporterOptions.suiteId) {
       _this.suiteId = _this.reporterOptions.suiteId;
@@ -83,30 +86,30 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
       TestRailCache.store('runId', _this.reporterOptions.runId);
     }
     /**
-         * This will validate runtime environment variables
-         * if we are passing suiteId as a part of runtime env variables we assign that value to variable
-         * usually we use this way for multi suite projects
-         */
+     * This will validate runtime environment variables
+     * if we are passing suiteId as a part of runtime env variables we assign that value to variable
+     * usually we use this way for multi suite projects
+     */
     const cliArguments = _this.testRailValidation.validateCLIArguments();
     if (cliArguments && cliArguments.length) {
       _this.suiteId = cliArguments;
     }
     /**
-         * If no suiteId has been passed with previous two methods
-         * runner will not be triggered
-         */
+     * If no suiteId has been passed with previous two methods
+     * runner will not be triggered
+     */
     if (_this.suiteId && _this.suiteId.toString().length) {
       runner.on('start', function() {
         /**
-                * runCounter is used to count how many spec files we have during one run
-                * in order to wait for close test run function
-                */
+        * runCounter is used to count how many spec files we have during one run
+        * in order to wait for close test run function
+        */
         TestRailCache.store('runCounter', runCounter);
         /**
-                * creates a new TestRail Run
-                * unless a cached value already exists for an existing TestRail Run in
-                * which case that will be used and no new one created.
-                */
+        * creates a new TestRail Run
+        * unless a cached value already exists for an existing TestRail Run in
+        * which case that will be used and no new one created.
+        */
         if (!TestRailCache.retrieve('runId')) {
           if (_this.reporterOptions.suiteId) {
             TestRailLogger.log('Following suiteId has been set in cypress.json file: ' + _this.suiteId);
@@ -131,30 +134,76 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
           TestRailLogger.log('Using existing TestRail Run with ID: \'' + _this.runId + '\'');
         }
       });
+      runner.on('end', function() {
+        _this.submitResults();
+      });
       runner.on('pass', function(test) {
-        _this.submitResults(testRailInterface1.Status.Passed, test, 'Execution time: ' + test.duration + 'ms');
+        _this.addToResults(testRailInterface1.Status.Passed, test, 'Execution time: ' + test.duration + 'ms');
       });
       runner.on('fail', function(test, err) {
-        _this.submitResults(testRailInterface1.Status.Failed, test, '' + err.message);
+        _this.addToResults(testRailInterface1.Status.Failed, test, '' + err.message);
       });
       runner.on('retry', function(test) {
-        _this.submitResults(testRailInterface1.Status.Retest, test, 'Cypress retry logic has been triggered!');
+        _this.addToResults(testRailInterface1.Status.Retest, test, 'Cypress retry logic has been triggered!');
       });
     }
     return _this;
   }
 
   /**
+   * @param {int} status The test status.
+   * @param {object} test The test object.
+   * @param {string} comment The test comment.
+ */
+  CypressTestRailReporter.prototype.addToResults = async function(status, test, comment) {
+    let caseIds = shared1.titleToCaseIds(test.title);
+    let caseResult = {};
+
+    const listGroupIds = this.reporterOptions.groupId;
+    let serverCaseIds = [];
+
+    if (this.reporterOptions.includeAllInTestRun === false) {
+      if (listGroupIds) {
+        const groupIDS = listGroupIds.toString().split(',');
+        for (let i = 0; i < groupIDS.length; i) {
+          const subCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
+          serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
+        }
+      } else {
+        // TODO? - filter by name?
+      }
+    } else {
+      serverCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, null);
+    }
+
+    invalidCaseIds = caseIds.filter(function(caseId) {
+      return !Array.from(serverCaseIds).includes(caseId);
+    });
+    caseIds = caseIds.filter(function(caseId) {
+      return Array.from(serverCaseIds).includes(caseId);
+    });
+
+    if (caseIds.length) {
+      caseResult = caseIds.map(function(caseId) {
+        return {
+          case_id: caseId,
+          status_id: status,
+          comment: comment,
+        };
+      });
+    }
+
+    caseResults.push(caseResult);
+  };
+
+  /**
    * Ensure that after each test results are reported continuously
    * Additionally to that if test status is failed or retried there is possibility
    * to upload failed screenshot for easier debugging in TestRail
    * Note: Uploading of screenshot is configurable option
-   * @param {string} status The test status.
-   * @param {object} test The test object.
-   * @param {string} comment The test comment.
-   * @return {CypressTestRailReporter}
+   * @return {class}
  */
-  CypressTestRailReporter.prototype.submitResults = async function(status, test, comment) {
+  CypressTestRailReporter.prototype.submitResults = async function() {
     let _a;
     const _this = this;
     let filePath;
@@ -165,65 +214,32 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
       filePath = TestRailCache.retrieve('screenshotPath');
     }
 
-    let caseIds = shared1.titleToCaseIds(test.title);
-    const listGroupIds = this.reporterOptions.groupId;
-    let serverCaseIds = [];
-
-    if (this.reporterOptions.includeAllInTestRun === false) {
-      if (listGroupIds) {
-        const groupIDS = listGroupIds.toString().split(',');
-        for (let i = 0; i < groupIDS.length; i) {
-          const subcaseids = await _this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
-          serverCaseIds = Array.prototype.concat(serverCaseIds, subcaseids);
-        }
-      } else {
-        // TODO? - filter by name?
-      }
-    } else {
-      serverCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, null);
-    }
-
-    const invalidCaseIds = caseIds.filter(function(caseId) {
-      return !Array.from(serverCaseIds).includes(caseId);
-    });
-    caseIds = caseIds.filter(function(caseId) {
-      return Array.from(serverCaseIds).includes(caseId);
-    });
-
     if (invalidCaseIds.length > 0) {
       TestRailLogger.log(
           'The following test IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
     }
-    if (caseIds.length) {
-      const caseResults = caseIds.map(function(caseId) {
-        return {
-          case_id: caseId,
-          status_id: status,
-          comment: comment,
-        };
-      });
-      (_a = this.results).push.apply(_a, caseResults);
-      const publishedResults = await this.testRailApi.publishResults(caseResults);
-      if (publishedResults !== undefined &&
+
+    (_a = this.results).push.apply(_a, caseResults);
+    const publishedResults = await this.testRailApi.publishResults(caseResults);
+    if (publishedResults !== undefined &&
                 this.reporterOptions.allowOnFailureScreenshotUpload === true &&
                 (status === testRailInterface1.Status.Failed)) {
-        Array.prototype.forEach.call(publishedResults, (function(result) {
-          _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
-        }));
-      }
-      if (publishedResults !== undefined &&
+      Array.prototype.forEach.call(publishedResults, (function(result) {
+        _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
+      }));
+    }
+    if (publishedResults !== undefined &&
                 this.reporterOptions.allowOnFailureVideoUpload === true &&
                 (status === testRailInterface1.Status.Failed)) {
-        Array.prototype.forEach.call(publishedResults, (function(result) {
-          _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
-        }));
-      }
-      if (publishedResults !== undefined &&
+      Array.prototype.forEach.call(publishedResults, (function(result) {
+        _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
+      }));
+    }
+    if (publishedResults !== undefined &&
                 this.reporterOptions.allowExportDownloads === true ) {
-        Array.prototype.forEach.call(publishedResults, (function(result) {
-          _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
-        }));
-      }
+      Array.prototype.forEach.call(publishedResults, (function(result) {
+        _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
+      }));
     }
   };
   return CypressTestRailReporter;
