@@ -136,6 +136,7 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
       });
       runner.on('end', function() {
         _this.submitResults();
+        caseResults = [];
       });
       runner.on('pass', function(test) {
         _this.addToResults(testRailInterface1.Status.Passed, test, 'Execution time: ' + test.duration + 'ms');
@@ -173,13 +174,16 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
    * Additionally to that if test status is failed or retried there is possibility
    * to upload failed screenshot for easier debugging in TestRail
    * Note: Uploading of screenshot is configurable option
-   * @return {class}
+   * @return {any}
  */
   CypressTestRailReporter.prototype.submitResults = async function() {
     // TODO: refactor to work with request changes
     // let _a;
     // const _this = this;
     // let filePath;
+    const listGroupIds = this.reporterOptions.groupId;
+    let serverCaseIds = [];
+
     // if (test.invocationDetails !== undefined) {
     //   filePath = test.invocationDetails.absoluteFile;
     //   TestRailCache.store('screenshotPath', filePath);
@@ -187,13 +191,35 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
     //   filePath = TestRailCache.retrieve('screenshotPath');
     // }
 
+    if (this.reporterOptions.includeAllInTestRun === false) {
+      if (listGroupIds) {
+        const groupIDS = listGroupIds.toString().split(',');
+        for (let i = 0; i < groupIDS.length; i) {
+          const subCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
+          serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
+        }
+      } else {
+        // TODO? - filter by name?
+      }
+    } else {
+      serverCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, null);
+    }
+
+    const invalidCaseIds = caseIds.filter(function(caseId) {
+      return !Array.from(serverCaseIds).includes(caseId);
+    });
+    const validCaseIDs = caseIds.filter(function(caseId) {
+      return Array.from(serverCaseIds).includes(caseId);
+    });
+
     if (invalidCaseIds.length > 0) {
       TestRailLogger.log(
-          'The following test IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
+          'The following case IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
     }
     // TODO: refactor to work with request changes
     // (_a = this.results).push.apply(_a, caseResults);
-    // const publishedResults = await this.testRailApi.publishResults(caseResults);
+    const publishedResults = await this.testRailApi.publishResults(caseResults.filter(
+        (x) => validCaseIDs.includes(x.case_id)));
     // if (publishedResults !== undefined &&
     //             this.reporterOptions.allowOnFailureScreenshotUpload === true &&
     //             (status === testRailInterface1.Status.Failed)) {
