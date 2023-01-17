@@ -35,8 +35,8 @@ const testRailValidation1 = require('./testrail.validation');
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
 const runCounter = 1;
-const caseResults = [];
-let invalidCaseIds;
+let caseResults = [];
+let caseIDs = [];
 
 const CypressTestRailReporter = /** @class */ (function(_super) {
   __extends(CypressTestRailReporter, _super);
@@ -156,42 +156,14 @@ const CypressTestRailReporter = /** @class */ (function(_super) {
    * @param {string} comment The test comment.
  */
   CypressTestRailReporter.prototype.addToResults = async function(status, test, comment) {
-    let caseIds = shared1.titleToCaseIds(test.title);
-    let caseResult = {};
+    const caseID = shared1.titleToCaseIds(test.title)[0];
+    caseIDs.push(caseID);
 
-    const listGroupIds = this.reporterOptions.groupId;
-    let serverCaseIds = [];
-
-    if (this.reporterOptions.includeAllInTestRun === false) {
-      if (listGroupIds) {
-        const groupIDS = listGroupIds.toString().split(',');
-        for (let i = 0; i < groupIDS.length; i) {
-          const subCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
-          serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
-        }
-      } else {
-        // TODO? - filter by name?
-      }
-    } else {
-      serverCaseIds = await _this.testRailApi.getCases(this.reporterOptions.suiteId, null);
-    }
-
-    invalidCaseIds = caseIds.filter(function(caseId) {
-      return !Array.from(serverCaseIds).includes(caseId);
-    });
-    caseIds = caseIds.filter(function(caseId) {
-      return Array.from(serverCaseIds).includes(caseId);
-    });
-
-    if (caseIds.length) {
-      caseResult = caseIds.map(function(caseId) {
-        return {
-          case_id: caseId,
-          status_id: status,
-          comment: comment,
-        };
-      });
-    }
+    const caseResult = {
+      case_id: caseID,
+      status_id: status,
+      comment: comment,
+    };
 
     caseResults.push(caseResult);
   };
