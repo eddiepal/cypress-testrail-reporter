@@ -40,7 +40,6 @@ jobs:
         run: npx eslint .
           --config .eslintrc.js
           --ext .js,.jsx,.ts,.tsx
-          --plugin eslint-config-google
           --rule 'max-len:[error, {code:120}]' --rule 'linebreak-style:[error, windows]'
           --format @microsoft/eslint-formatter-sarif
           --output-file eslint-results.sarif
