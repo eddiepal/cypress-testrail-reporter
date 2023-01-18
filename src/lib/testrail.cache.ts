@@ -1,6 +1,7 @@
 const fs = require('fs');
+
 const cacheFileName = 'testrail-cache.txt';
-let cacheData = {};
+let cacheData: any = {};
 const fileExists = function() {
   return fs.existsSync(cacheFileName);
 };
@@ -17,7 +18,7 @@ const load = function() {
     createFile();
   }
   const dataStr = fs.readFileSync(cacheFileName);
-  if (dataStr && dataStr != '') {
+  if (dataStr && dataStr !== '') {
     cacheData = JSON.parse(dataStr);
   }
   else {
@@ -25,17 +26,17 @@ const load = function() {
   }
 };
 const TestRailCache = {
-  store: function(key, val) {
+  store: function(key: any, val: any) {
     cacheData[key] = val;
     persist();
   },
-  retrieve: function(key) {
+  retrieve: function(key: any) {
     load();
     return cacheData[key];
   },
   purge: function() {
     if (fileExists()) {
-      fs.unlink(cacheFileName, (err) => {
+      fs.unlink(cacheFileName, (err: any) => {
         if (err) {
           throw err;
         }

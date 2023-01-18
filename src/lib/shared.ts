@@ -1,12 +1,9 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', {value: true});
-exports.titleToCaseIds = void 0;
 /**
  * Search for all applicable test cases
- * @param {string} title
- * @return {any}
+ * @param title
+ * @returns {any}
  */
-function titleToCaseIds(title) {
+ export function titleToCaseIds(title: string): number[] {
   const caseIds = [];
   const testCaseIdRegExp = /\bT?C(\d+)\b/g;
   let m;
@@ -16,4 +13,3 @@ function titleToCaseIds(title) {
   }
   return caseIds;
 }
-exports.titleToCaseIds = titleToCaseIds;

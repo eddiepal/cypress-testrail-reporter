@@ -1,46 +1,33 @@
-'use strict';
-let __assign = (this && this.__assign) || function() {
-  __assign = Object.assign || function(t) {
-    for (let s, i = 1, n = arguments.length; i < n; i++) {
-      s = arguments[i];
-      for (const p in s) {
-        if (Object.prototype.hasOwnProperty.call(s, p)) {
-          t[p] = s[p];
-        }
-      }
-    }
-    return t;
-  };
-  return __assign.apply(this, arguments);
-};
-Object.defineProperty(exports, '__esModule', {value: true});
-exports.TestRail = void 0;
 require('path');
 const axios = require('axios');
 const fs = require('fs');
-const FormData = require('form-data');
 const TestRailLogger = require('./testrail.logger');
 const TestRailCache = require('./testrail.cache');
 const chalk = require('chalk');
-const deasync = require('deasync');
-const TestRail = /** @class */ (function() {
-  /**
-   * @param {string} options Reporter options.
- */
-  function TestRail(options) {
-    this.options = options;
-    this.includeAll = true;
-    this.caseIds = [];
-    this.base = options.host + '/index.php?/api/v2';
+const FormData = require('form-data');
+require('deasync');
+import { TestRailOptions, TestRailResult } from './testrail.interface';
+
+export class TestRail {
+  private base: string;
+  private urlToPage: string;
+  private runId: Number | undefined;
+  private includeAll: Boolean = true;
+  private caseIds: Number[] = [];
+  // private retries: Number;
+
+  constructor(private options: TestRailOptions) {
+    this.base = `${options.host}/index.php?/api/v2`;
     this.urlToPage = options.host + '/index.php?';
-    this.runId;
   }
-  TestRail.prototype.getCases = async function(suiteId, groupId) {
+
+
+  public getCases = async (suiteId: number, groupId: number | undefined) => {
     let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
     const initialUrl = this.urlToPage;
-    let caseIdArray = [];
-    let nextPage = '';
-    let newUrl = '';
+    let caseIdArray: number[] = [];
+    let nextPage: String = '';
+    let newUrl: String = '';
 
     if (groupId) {
       url += '&section_id=' + groupId;
@@ -54,7 +41,7 @@ const TestRail = /** @class */ (function() {
 
     newUrl = url + '&limit=250&offset=0';
 
-    while (nextPage != null) {
+    while (nextPage !== null) {
       await axios({
         method: 'get',
         url: newUrl,
@@ -63,21 +50,20 @@ const TestRail = /** @class */ (function() {
           username: this.options.username,
           password: this.options.password,
         },
-      }).then( function(response) {
+      }).then((response: any) => {
         nextPage = response.data._links.next;
-        caseIdArray = caseIdArray.concat(response.data.cases.map(function(item) {
+        caseIdArray = caseIdArray.concat(response.data.cases.map((item: any) => {
           return item.id;
         }));
         newUrl = initialUrl + nextPage;
       })
-          .catch(function(error) {
+          .catch((error: any) => {
             return console.error(error);
           });
     }
     return caseIdArray;
   };
-  TestRail.prototype.createRun = async function(name, host, description, suiteId) {
-    const _this = this;
+  public createRun = async (name: string, host: string, description: string, suiteId: number) => {
     const _host = host;
     const listGroupIds = this.options.groupId;
 
@@ -86,11 +72,11 @@ const TestRail = /** @class */ (function() {
       if (listGroupIds) {
         const groupIDS = listGroupIds.toString().split(',');
         for (let i = 0; i < groupIDS.length; i++) {
-          const subCaseIds = await this.getCases(suiteId, groupIDS[i]);
+          const subCaseIds = await this.getCases(suiteId, parseInt(groupIDS[i]));
           this.caseIds = Array.prototype.concat(this.caseIds, subCaseIds);
         }
       } else {
-        this.caseIds = await this.getCases(suiteId, null);
+        this.caseIds = await this.getCases(suiteId, undefined);
       }
     }
 
@@ -110,18 +96,18 @@ const TestRail = /** @class */ (function() {
         case_ids: this.caseIds,
       }),
     })
-        .then(function(response) {
-          _this.runId = response.data.id;
+        .then((response: any) => {
+          this.runId = response.data.id;
           // cache the TestRail Run ID
-          TestRailCache.store('runId', _this.runId);
-          const path = 'runs/view/' + _this.runId;
+          TestRailCache.store('runId', this.runId);
+          const path = 'runs/view/' + this.runId;
           TestRailLogger.log('Results are published to ' + chalk.magenta(_host + '/index.php?/' + path));
         })
-        .catch(function(error) {
+        .catch((error: any) => {
           return console.error(error);
         });
   };
-  TestRail.prototype.deleteRun = function() {
+  public deleteRun = () => {
     this.runId = TestRailCache.retrieve('runId');
     axios({
       method: 'post',
@@ -131,56 +117,61 @@ const TestRail = /** @class */ (function() {
         username: this.options.username,
         password: this.options.password,
       },
-    }).catch(function(error) {
+    }).catch((error: any) => {
       return console.error(error);
     });
   };
-  TestRail.prototype.publishResults = function(results) {
+  public publishResults = (results: TestRailResult[]) => {
     this.runId = TestRailCache.retrieve('runId');
-    const _res = results;
-    let done = false;
     TestRailLogger.log(this.runId);
     TestRailLogger.log('Add test results to TestRail...');
 
-    (() => {
-      return axios({
+    return axios({
+      method: 'post',
+      url: this.base + '/add_results_for_cases/' + this.runId,
+      headers: {'Content-Type': 'application/json'},
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+      data: JSON.stringify({results: results}),
+    })
+        .then((response: any) => {
+          TestRailLogger.log('Test cases submitted to test run.');
+          return response.data;
+        })
+        .catch((error: any) => {
+          TestRailLogger.log(error);
+          TestRailLogger.log('Test case ' + '_res[0].case_id ' + ' was not found in the test run');
+        });
+  };
+  public uploadAttachment (resultId: number, path: string) {
+    const form = new FormData();
+    form.append('attachment', fs.createReadStream(path));
+
+    axios({
         method: 'post',
-        url: this.base + '/add_results_for_cases/' + this.runId,
-        headers: {'Content-Type': 'application/json'},
+        url: `${this.base}/add_attachment_to_result/${resultId}`,
+        headers: { ...form.getHeaders() },
         auth: {
           username: this.options.username,
           password: this.options.password,
         },
-        data: JSON.stringify({results: results}),
-      })
-          .then(function(response) {
-            TestRailLogger.log('Test cases submitted to test run.');
-            done = true;
-            return response.data;
-          })
-          .catch(function(error) {
-            TestRailLogger.log(error);
-            done = true;
-            // TestRailLogger.log('Test case '_res[0].case_id ' was not found in the test run');
-          });
-    })();
-    require('deasync').loopWhile(function() {
-      return !done;
-    });
-  };
+        data: form,
+    })
+  }
   // This function will attach failed screenshot on each test result(comment) if founds it
-  TestRail.prototype.uploadScreenshots = function(caseId, resultId, _path) {
-    const _this = this;
+  public uploadScreenshots = (caseId: string, resultId: number, _path: string) => {
     const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
 
-    fs.readdir(SCREENSHOTS_FOLDER_PATH, function(err, files) {
+    fs.readdir(SCREENSHOTS_FOLDER_PATH, (err: any, files: any) => {
       if (err) {
         return console.log('Unable to scan screenshots folder: ' + err);
       }
-      files.forEach(function(file) {
+      files.forEach((file: any) => {
         if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
           try {
-            _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
+            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
           } catch (err) {
             console.log('Screenshot upload error: ', err);
           }
@@ -188,27 +179,25 @@ const TestRail = /** @class */ (function() {
       });
     });
   };
-  TestRail.prototype.uploadDownloads = function(caseId, resultId, _path) {
-    const _this = this;
+  public uploadDownloads = (caseId: number, resultId: number, _path: string) => {
     const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
 
-    fs.readdir(DOWNLOADS_FOLDER_PATH, function(err, files) {
+    fs.readdir(DOWNLOADS_FOLDER_PATH, (err: any, files: any) => {
       if (err) {
         return console.log('Unable to scan downloads folder: ' + err);
       }
-      files.forEach(function(file) {
+      files.forEach((file: any) => {
         try {
-          _this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
+          this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
         } catch (err) {
           console.log('Download upload error: ', err);
         }
       });
     });
   };
-  TestRail.prototype.uploadVideos = function(caseId, resultId, _path) {
-    const _this = this;
+  public uploadVideos = (caseId: number, resultId: number, _path: string) => {
     const vPath = _path.replace('integration','videos');
-    const VIDEOS_FOLDER_PATH = vPath.replace(/([^\/]*js)$/g, '');
+    const VIDEOS_FOLDER_PATH = vPath.replace(/([^/]*js)$/g, '');
     const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
 
     const {fork} = require('child_process');
@@ -225,7 +214,7 @@ const TestRail = /** @class */ (function() {
       }),
     }).unref();
   };
-  TestRail.prototype.closeRun = function() {
+  public closeRun = () => {
     this.runId = TestRailCache.retrieve('runId');
     axios({
       method: 'post',
@@ -236,13 +225,11 @@ const TestRail = /** @class */ (function() {
         password: this.options.password,
       },
     })
-        .then(function() {
+        .then(() => {
           TestRailLogger.log('Test run closed successfully');
         })
-        .catch(function(error) {
+        .catch((error: any) => {
           return console.error(error);
         });
   };
-  return TestRail;
-}());
-exports.TestRail = TestRail;
+}
