@@ -1,178 +1,248 @@
+'use strict';
+let __assign = (this && this.__assign) || function() {
+  __assign = Object.assign || function(t) {
+    for (let s, i = 1, n = arguments.length; i < n; i++) {
+      s = arguments[i];
+      for (const p in s) {
+        if (Object.prototype.hasOwnProperty.call(s, p)) {
+          t[p] = s[p];
+        }
+      }
+    }
+    return t;
+  };
+  return __assign.apply(this, arguments);
+};
+Object.defineProperty(exports, '__esModule', {value: true});
+exports.TestRail = void 0;
+require('path');
 const axios = require('axios');
 const fs = require('fs');
-const path = require('path');
 const FormData = require('form-data');
 const TestRailLogger = require('./testrail.logger');
 const TestRailCache = require('./testrail.cache');
-import { TestRailOptions, TestRailResult } from './testrail.interface';
-
-export class TestRail {
-  private base: String;
-  private runId: Number;
-  private includeAll: Boolean = true;
-  private caseIds: Number[] = [];
-  private retries: number;
-
-  constructor(private options: TestRailOptions) {
-    this.base = `${options.host}/index.php?/api/v2`;
+const chalk = require('chalk');
+const deasync = require('deasync');
+const TestRail = /** @class */ (function() {
+  /**
+   * @param {string} options Reporter options.
+ */
+  function TestRail(options) {
+    this.options = options;
+    this.includeAll = true;
+    this.caseIds = [];
+    this.base = options.host + '/index.php?/api/v2';
+    this.urlToPage = options.host + '/index.php?';
     this.runId;
   }
+  TestRail.prototype.getCases = async function(suiteId, groupId) {
+    let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
+    const initialUrl = this.urlToPage;
+    let caseIdArray = [];
+    let nextPage = '';
+    let newUrl = '';
 
-  public getCases (suiteId: number) {
-    let url = `${this.base}/get_cases/${this.options.projectId}&suite_id=${suiteId}`
-    if (this.options.groupId) {
-      url += `&section_id=${this.options.groupId}`
+    if (groupId) {
+      url += '&section_id=' + groupId;
     }
     if (this.options.filter) {
-      url += `&filter=${this.options.filter}`
+      url += '&filter=' + this.options.filter;
     }
     if (this.options.typeId) {
-      url += `&type_id=${this.options.typeId}`
+      url += '&type_id=' + this.options.typeId;
     }
-    return axios({
-        method:'get',
-        url: url,
-        headers: { 'Content-Type': 'application/json' }, 
-        auth: {
-            username: this.options.username,
-            password: this.options.password
-        } 
-      })
-      .then(response => {
-        return response.data.map(item =>item.id)
-      })
-      .catch(error => console.error(error))
-  }
 
-  public createRun (name: string, description: string, suiteId: number) {
-    if (this.options.includeAllInTestRun === false){
-      this.includeAll = false;
-      this.caseIds = this.getCases(suiteId);
-    }
-    axios({
-        method: 'post',
-        url: `${this.base}/add_run/${this.options.projectId}`,
-        headers: { 'Content-Type': 'application/json' },
+    newUrl = url + '&limit=250&offset=0';
+
+    while (nextPage != null) {
+      await axios({
+        method: 'get',
+        url: newUrl,
+        headers: {'Content-Type': 'application/json'},
         auth: {
           username: this.options.username,
           password: this.options.password,
         },
-        data: JSON.stringify({
-          suite_id: suiteId,
-          name,
-          description,
-          include_all: this.includeAll,
-          case_ids: this.caseIds
-        }),
+      }).then( function(response) {
+        nextPage = response.data._links.next;
+        caseIdArray = caseIdArray.concat(response.data.cases.map(function(item) {
+          return item.id;
+        }));
+        newUrl = initialUrl + nextPage;
       })
-      .then(response => {
-          this.runId = response.data.id;
-          // cache the TestRail Run ID
-          TestRailCache.store('runId', this.runId);
-      })
-      .catch(error => console.error(error));
-  }
+          .catch(function(error) {
+            return console.error(error);
+          });
+    }
+    return caseIdArray;
+  };
+  TestRail.prototype.createRun = async function(name, host, description, suiteId) {
+    const _this = this;
+    const _host = host;
+    const listGroupIds = this.options.groupId;
 
-  public deleteRun() {
-    this.runId = TestRailCache.retrieve('runId');
+    if (this.options.includeAllInTestRun === false) {
+      this.includeAll = false;
+      if (listGroupIds) {
+        const groupIDS = listGroupIds.toString().split(',');
+        for (let i = 0; i < groupIDS.length; i++) {
+          const subCaseIds = await this.getCases(suiteId, groupIDS[i]);
+          this.caseIds = Array.prototype.concat(this.caseIds, subCaseIds);
+        }
+      } else {
+        this.caseIds = await this.getCases(suiteId, null);
+      }
+    }
+
     axios({
       method: 'post',
-      url: `${this.base}/delete_run/${this.runId}`,
-      headers: { 'Content-Type': 'application/json' },
+      url: this.base + '/add_run/' + this.options.projectId,
+      headers: {'Content-Type': 'application/json'},
       auth: {
         username: this.options.username,
         password: this.options.password,
       },
-    }).catch(error => console.error(error))
-  }
-
-  public publishResults(results: TestRailResult[]) {
-    this.runId = TestRailCache.retrieve('runId');
-    return axios({
-        method: 'post',
-        url: `${this.base}/add_results_for_cases/${this.runId}`,
-        headers: { 'Content-Type': 'application/json' },
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        },
-        data: JSON.stringify({ results }),
-      })
-      .then(response => response.data)
-      .catch(error => { 
-        console.error(error); 
-      })
-  }
-
-  public publishResult(results: TestRailResult){
-    this.runId = TestRailCache.retrieve('runId');
-    axios.post(
-      `${this.base}/add_results_for_cases/${this.runId}`,
-      {
-        results: [{ case_id: results.case_id, status_id: results.status_id, comment: results.comment }],
-      },
-      {
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        },
-      }
-    ).catch(error => { 
-      console.error(error); 
+      data: JSON.stringify({
+        suite_id: suiteId,
+        name: name,
+        description: description,
+        include_all: this.includeAll,
+        case_ids: this.caseIds,
+      }),
     })
-  }
-
-  public uploadAttachment (resultId, path) {
-    const form = new FormData();
-    form.append('attachment', fs.createReadStream(path));
-
+        .then(function(response) {
+          _this.runId = response.data.id;
+          // cache the TestRail Run ID
+          TestRailCache.store('runId', _this.runId);
+          const path = 'runs/view/' + _this.runId;
+          TestRailLogger.log('Results are published to ' + chalk.magenta(_host + '/index.php?/' + path));
+        })
+        .catch(function(error) {
+          return console.error(error);
+        });
+  };
+  TestRail.prototype.deleteRun = function() {
+    this.runId = TestRailCache.retrieve('runId');
     axios({
+      method: 'post',
+      url: this.base + '/delete_run/' + this.runId,
+      headers: {'Content-Type': 'application/json'},
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+    }).catch(function(error) {
+      return console.error(error);
+    });
+  };
+  TestRail.prototype.publishResults = function(results) {
+    this.runId = TestRailCache.retrieve('runId');
+    const _res = results;
+    let done = false;
+    TestRailLogger.log(this.runId);
+    TestRailLogger.log('Add test results to TestRail...');
+
+    (() => {
+      return axios({
         method: 'post',
-        url: `${this.base}/add_attachment_to_result/${resultId}`,
-        headers: { ...form.getHeaders() },
+        url: this.base + '/add_results_for_cases/' + this.runId,
+        headers: {'Content-Type': 'application/json'},
         auth: {
           username: this.options.username,
           password: this.options.password,
         },
-        data: form,
+        data: JSON.stringify({results: results}),
       })
-  }
-
+          .then(function(response) {
+            TestRailLogger.log('Test cases submitted to test run.');
+            done = true;
+            return response.data;
+          })
+          .catch(function(error) {
+            TestRailLogger.log(error);
+            done = true;
+            // TestRailLogger.log('Test case '_res[0].case_id ' was not found in the test run');
+          });
+    })();
+    require('deasync').loopWhile(function() {
+      return !done;
+    });
+  };
   // This function will attach failed screenshot on each test result(comment) if founds it
-  public uploadScreenshots (caseId, resultId) {
-    const SCREENSHOTS_FOLDER_PATH = path.join(__dirname, 'cypress/screenshots');
+  TestRail.prototype.uploadScreenshots = function(caseId, resultId, _path) {
+    const _this = this;
+    const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
 
-    fs.readdir(SCREENSHOTS_FOLDER_PATH, (err, files) => {
+    fs.readdir(SCREENSHOTS_FOLDER_PATH, function(err, files) {
       if (err) {
         return console.log('Unable to scan screenshots folder: ' + err);
-      } 
-
-      files.forEach(file => {
-        if (file.includes(`C${caseId}`) && /(failed|attempt)/g.test(file)) {
+      }
+      files.forEach(function(file) {
+        if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
           try {
-            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + file)
+            _this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
           } catch (err) {
-            console.log('Screenshot upload error: ', err)
+            console.log('Screenshot upload error: ', err);
           }
         }
       });
     });
   };
+  TestRail.prototype.uploadDownloads = function(caseId, resultId, _path) {
+    const _this = this;
+    const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
 
-  public closeRun() {
+    fs.readdir(DOWNLOADS_FOLDER_PATH, function(err, files) {
+      if (err) {
+        return console.log('Unable to scan downloads folder: ' + err);
+      }
+      files.forEach(function(file) {
+        try {
+          _this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
+        } catch (err) {
+          console.log('Download upload error: ', err);
+        }
+      });
+    });
+  };
+  TestRail.prototype.uploadVideos = function(caseId, resultId, _path) {
+    const _this = this;
+    const vPath = _path.replace('integration','videos');
+    const VIDEOS_FOLDER_PATH = vPath.replace(/([^\/]*js)$/g, '');
+    const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
+
+    const {fork} = require('child_process');
+    const child = fork(__dirname + '/publishVideo.js', {
+      detached: true,
+      stdio: 'inherit',
+      env: Object.assign(process.env, {
+        vName: vidName,
+        vFolder: VIDEOS_FOLDER_PATH,
+        resId: resultId,
+        base: this.base,
+        username: this.options.username,
+        pwd: this.options.password,
+      }),
+    }).unref();
+  };
+  TestRail.prototype.closeRun = function() {
     this.runId = TestRailCache.retrieve('runId');
     axios({
-        method: 'post',
-        url: `${this.base}/close_run/${this.runId}`,
-        headers: { 'Content-Type': 'application/json' },
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        },
-      })
-      .then(() => {
+      method: 'post',
+      url: this.base + '/close_run/' + this.runId,
+      headers: {'Content-Type': 'application/json'},
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+    })
+        .then(function() {
           TestRailLogger.log('Test run closed successfully');
-      })
-      .catch(error => console.error(error));
-  }
-}
+        })
+        .catch(function(error) {
+          return console.error(error);
+        });
+  };
+  return TestRail;
+}());
+exports.TestRail = TestRail;

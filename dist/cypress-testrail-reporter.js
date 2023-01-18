@@ -37,11 +37,11 @@ const TestRailLogger = require('./testrail.logger');
 const runCounter = 1;
 let caseResults = [];
 let caseIDs = [];
-
+//Hey
 const CypressTestRailReporter = /** @class */ (function(_super) {
   __extends(CypressTestRailReporter, _super);
   /**
- * @param {int} runner The Cypress runner??.
+   * @param {int} runner The Cypress runner??.
  * @param {int} options Reporter options.
  * @return {any}
  */

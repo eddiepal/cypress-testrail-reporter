@@ -1,16 +1,19 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', {value: true});
+exports.titleToCaseIds = void 0;
 /**
  * Search for all applicable test cases
- * @param title
- * @returns {any}
+ * @param {string} title
+ * @return {any}
  */
-export function titleToCaseIds(title: string): number[] {
-  let caseIds: number[] = [];
-
-  let testCaseIdRegExp: RegExp = /\bT?C(\d+)\b/g;
+function titleToCaseIds(title) {
+  const caseIds = [];
+  const testCaseIdRegExp = /\bT?C(\d+)\b/g;
   let m;
   while ((m = testCaseIdRegExp.exec(title)) !== null) {
-    let caseId = parseInt(m[1]);
+    const caseId = parseInt(m[1]);
     caseIds.push(caseId);
   }
   return caseIds;
 }
+exports.titleToCaseIds = titleToCaseIds;
