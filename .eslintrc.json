@@ -1,0 +1,15 @@
+{
+  "extends": "./node_modules/gts/",
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es2021": true,
+    "node": true
+  },
+  "rules": {
+    "max-len": ["error", {"code": 120}],
+    "linebreak-style": ["error", "windows"],
+    "prettier/prettier": 0,
+    "spaced-comment": ["error", "always"]
+  }
+}
