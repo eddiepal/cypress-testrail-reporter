@@ -169,7 +169,7 @@ export class CypressTestRailReporter extends reporters.Spec {
       if (this.reporterOptions.includeAllInTestRun === false) {
         if (listGroupIds) {
           const groupIDS = listGroupIds.toString().split(',');
-          for (let i = 0; i < groupIDS.length; i) {
+          for (let i = 0; i < groupIDS.length; i++) {
             const subCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
             serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
           }

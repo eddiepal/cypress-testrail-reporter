@@ -40,8 +40,8 @@ export class TestRail {
 
     newUrl = url + '&limit=250&offset=0';
 
+    console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
     while (nextPage !== null) {
-      console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
       await axios({
         method: 'get',
         url: newUrl,
