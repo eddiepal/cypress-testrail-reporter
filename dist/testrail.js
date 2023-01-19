@@ -32,6 +32,7 @@ class TestRail {
             }
             newUrl = url + '&limit=250&offset=0';
             while (nextPage !== null) {
+                console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
                 await axios({
                     method: 'get',
                     url: newUrl,
@@ -46,8 +47,12 @@ class TestRail {
                         return item.id;
                     }));
                     newUrl = initialUrl + nextPage;
+                    if (nextPage === null) {
+                        console.log(chalk.green('Test cases retrieved.\n'));
+                    }
                 })
                     .catch((error) => {
+                    console.log(chalk.red('\nFailed to retrieve test cases. Response message - ' + error));
                     return console.error(error);
                 });
             }
@@ -112,8 +117,7 @@ class TestRail {
         };
         this.publishResults = (results) => {
             this.runId = TestRailCache.retrieve('runId');
-            TestRailLogger.log(this.runId);
-            TestRailLogger.log('Add test results to TestRail...');
+            console.log(chalk.blue('Adding results from current spec file to TestRail...'));
             return axios({
                 method: 'post',
                 url: this.base + '/add_results_for_cases/' + this.runId,
@@ -125,12 +129,11 @@ class TestRail {
                 data: JSON.stringify({ results: results }),
             })
                 .then((response) => {
-                TestRailLogger.log('Test cases submitted to test run.');
+                console.log(chalk.green('Results added to test run.'));
                 return response.data;
             })
                 .catch((error) => {
-                TestRailLogger.log(error);
-                TestRailLogger.log('Test case ' + '_res[0].case_id ' + ' was not found in the test run');
+                console.log(chalk.red('Failed to add results to TestRail. Response message - ' + error));
             });
         };
         // This function will attach failed screenshot on each test result(comment) if founds it

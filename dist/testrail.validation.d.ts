@@ -2,7 +2,7 @@ import { TestRailOptions } from './testrail.interface';
 export declare class TestRailValidation {
     private options;
     constructor(options: TestRailOptions);
-    validateReporterOptions(reporterOptions: object): object;
+    validateReporterOptions(reporterOptions: any): any;
     private validate;
     /**
      * This function will validate do we pass suiteId as a CLI agrument as a part of command line execution

@@ -7,6 +7,8 @@ export declare class CypressTestRailReporter extends reporters.Spec {
     private reporterOptions;
     private suiteId;
     private groupId;
+    private caseIds;
+    private caseResults;
     constructor(runner: any, options: any);
     /**
      * @param {int} status The test status.
@@ -19,7 +21,6 @@ export declare class CypressTestRailReporter extends reporters.Spec {
      * Additionally to that if test status is failed or retried there is possibility
      * to upload failed screenshot for easier debugging in TestRail
      * Note: Uploading of screenshot is configurable option
-     * @return {any}
    */
-    submitResults: () => Promise<void>;
+    submitResults: () => void;
 }
