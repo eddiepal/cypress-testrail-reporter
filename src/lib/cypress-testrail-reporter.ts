@@ -6,9 +6,9 @@ import { Status, TestRailResult } from './testrail.interface';
 import { TestRailValidation } from './testrail.validation';
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
+const deasync = require('deasync');
+const chalk = require('chalk');
 const runCounter = 1;
-const caseIds: number[] = [];
-let caseResults: any[] = [];
 
 export class CypressTestRailReporter extends reporters.Spec {
     private results: TestRailResult[] = [];
@@ -18,6 +18,8 @@ export class CypressTestRailReporter extends reporters.Spec {
     private reporterOptions: any;
     private suiteId: any = [];
     private groupId: string = '';
+    private caseIds: number[] = [];
+    private caseResults: TestRailResult[] = [];
 
     constructor(runner: any, options: any) {
       super(runner);
@@ -107,10 +109,6 @@ export class CypressTestRailReporter extends reporters.Spec {
             TestRailLogger.log('Using existing TestRail Run with ID: \'' + this.runId + '\'');
           }
         });
-        runner.on('end', () => {
-          this.submitResults();
-          caseResults = [];
-        });
         runner.on('pass', (test: any) => {
           this.addToResults(Status.Passed, test, 'Execution time: ' + test.duration + 'ms');
         });
@@ -120,6 +118,11 @@ export class CypressTestRailReporter extends reporters.Spec {
         runner.on('retry', (test: any) => {
           this.addToResults(Status.Retest, test, 'Cypress retry logic has been triggered!');
         });
+        runner.on('end', () => {
+          this.submitResults();
+          this.caseResults = [];
+          this.caseIds = [];
+        });
       }
   }
 
@@ -128,9 +131,9 @@ export class CypressTestRailReporter extends reporters.Spec {
    * @param {object} test The test object.
    * @param {string} comment The test comment.
  */
-  public addToResults = async function(status: number, test: any, comment: string) {
+  public addToResults = async (status: number, test: any, comment: string) => {
     const caseID = titleToCaseIds(test.title)[0];
-    caseIds.push(caseID);
+    this.caseIds.push(caseID);
 
     const caseResult = {
       case_id: caseID,
@@ -138,7 +141,7 @@ export class CypressTestRailReporter extends reporters.Spec {
       comment: comment,
     };
 
-    caseResults.push(caseResult);
+    this.caseResults.push(caseResult);
   };
 
   /**
@@ -146,14 +149,14 @@ export class CypressTestRailReporter extends reporters.Spec {
    * Additionally to that if test status is failed or retried there is possibility
    * to upload failed screenshot for easier debugging in TestRail
    * Note: Uploading of screenshot is configurable option
-   * @return {any}
  */
-  public submitResults = async () => {
+  public submitResults = () => {
     // TODO: refactor to work with request changes
     // let _a;
     // let filePath;
     const listGroupIds = this.reporterOptions.groupId;
     let serverCaseIds: number[] = [];
+    let done = false;
 
     // if (test.invocationDetails !== undefined) {
     //   filePath = test.invocationDetails.absoluteFile;
@@ -162,54 +165,61 @@ export class CypressTestRailReporter extends reporters.Spec {
     //   filePath = TestRailCache.retrieve('screenshotPath');
     // }
 
-    if (this.reporterOptions.includeAllInTestRun === false) {
-      if (listGroupIds) {
-        const groupIDS = listGroupIds.toString().split(',');
-        for (let i = 0; i < groupIDS.length; i) {
-          const subCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
-          serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
+    (async () => {
+      if (this.reporterOptions.includeAllInTestRun === false) {
+        if (listGroupIds) {
+          const groupIDS = listGroupIds.toString().split(',');
+          for (let i = 0; i < groupIDS.length; i) {
+            const subCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
+            serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
+          }
+        } else {
+          // TODO? - filter by name?
         }
       } else {
-        // TODO? - filter by name?
+        serverCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, undefined);
       }
-    } else {
-      serverCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, undefined);
-    }
 
-    const invalidCaseIds = caseIds.filter((caseId) => {
-      return !Array.from(serverCaseIds).includes(caseId);
-    });
-    const validCaseIDs = caseIds.filter((caseId) => {
-      return Array.from(serverCaseIds).includes(caseId);
-    });
+      const invalidCaseIds = this.caseIds.filter((caseId) => {
+        return !Array.from(serverCaseIds).includes(caseId);
+      });
+      const validCaseIDs = this.caseIds.filter((caseId) => {
+        return Array.from(serverCaseIds).includes(caseId);
+      });
 
-    if (invalidCaseIds.length > 0) {
-      TestRailLogger.log(
-          'The following case IDs were found in Cypress tests, but not found in TestRail: ' + invalidCaseIds);
-    }
-    // TODO: refactor to work with request changes
-    // (_a = this.results).push.apply(_a, caseResults);
-    const publishedResults = await this.testRailApi.publishResults(caseResults.filter(
-        (x) => validCaseIDs.includes(x.case_id)));
-    // if (publishedResults !== undefined &&
-    //             this.reporterOptions.allowOnFailureScreenshotUpload === true &&
-    //             (status === testRailInterface.Status.Failed)) {
-    //   Array.prototype.forEach.call(publishedResults, (function(result) {
-    //     _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
-    //   }));
-    // }
-    // if (publishedResults !== undefined &&
-    //             this.reporterOptions.allowOnFailureVideoUpload === true &&
-    //             (status === testRailInterface.Status.Failed)) {
-    //   Array.prototype.forEach.call(publishedResults, (function(result) {
-    //     _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
-    //   }));
-    // }
-    // if (publishedResults !== undefined &&
-    //             this.reporterOptions.allowExportDownloads === true ) {
-    //   Array.prototype.forEach.call(publishedResults, (function(result) {
-    //     _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
-    //   }));
-    // }
+      if (invalidCaseIds.length > 0) {
+          console.log(chalk.rgb(255, 165, 0)(
+              'WARNING: The following case IDs were found in the current spec file, but not found in TestRail: ' +
+              invalidCaseIds + '\n'));
+      }
+      // TODO: refactor to work with request changes
+      // (_a = this.results).push.apply(_a, caseResults);
+      const publishedResults = await this.testRailApi.publishResults(this.caseResults.filter(
+          (x) => validCaseIDs.includes(x.case_id))).then(() =>
+            {
+              done = true;
+            })
+      // if (publishedResults !== undefined &&
+      //             this.reporterOptions.allowOnFailureScreenshotUpload === true &&
+      //             (status === testRailInterface.Status.Failed)) {
+      //   Array.prototype.forEach.call(publishedResults, (function(result) {
+      //     _this.testRailApi.uploadScreenshots(caseIds[0], result.id, filePath);
+      //   }));
+      // }
+      // if (publishedResults !== undefined &&
+      //             this.reporterOptions.allowOnFailureVideoUpload === true &&
+      //             (status === testRailInterface.Status.Failed)) {
+      //   Array.prototype.forEach.call(publishedResults, (function(result) {
+      //     _this.testRailApi.uploadVideos(caseIds[0], result.id, filePath);
+      //   }));
+      // }
+      // if (publishedResults !== undefined &&
+      //             this.reporterOptions.allowExportDownloads === true ) {
+      //   Array.prototype.forEach.call(publishedResults, (function(result) {
+      //     _this.testRailApi.uploadDownloads(caseIds[0], result.id, filePath);
+      //   }));
+      // }
+    })();
+    require('deasync').loopWhile(() => {return !done;});
   };
 }

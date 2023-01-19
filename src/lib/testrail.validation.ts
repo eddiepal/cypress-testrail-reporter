@@ -6,7 +6,7 @@ export class TestRailValidation {
   constructor(private options: TestRailOptions) {
   }
 
-  public validateReporterOptions (reporterOptions: object) {
+  public validateReporterOptions (reporterOptions: any) {
     if (!reporterOptions) {
       throw new Error('Missing reporterOptions in cypress.json');
     }

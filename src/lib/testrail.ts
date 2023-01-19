@@ -21,7 +21,6 @@ export class TestRail {
     this.urlToPage = options.host + '/index.php?';
   }
 
-
   public getCases = async (suiteId: number, groupId: number | undefined) => {
     let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
     const initialUrl = this.urlToPage;
@@ -42,6 +41,7 @@ export class TestRail {
     newUrl = url + '&limit=250&offset=0';
 
     while (nextPage !== null) {
+      console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
       await axios({
         method: 'get',
         url: newUrl,
@@ -56,8 +56,12 @@ export class TestRail {
           return item.id;
         }));
         newUrl = initialUrl + nextPage;
+        if(nextPage === null) {
+            console.log(chalk.green('Test cases retrieved.\n'));
+        }
       })
           .catch((error: any) => {
+            console.log(chalk.red('\nFailed to retrieve test cases. Response message - ' + error));
             return console.error(error);
           });
     }
@@ -123,8 +127,7 @@ export class TestRail {
   };
   public publishResults = (results: TestRailResult[]) => {
     this.runId = TestRailCache.retrieve('runId');
-    TestRailLogger.log(this.runId);
-    TestRailLogger.log('Add test results to TestRail...');
+    console.log(chalk.blue('Adding results from current spec file to TestRail...'));
 
     return axios({
       method: 'post',
@@ -137,12 +140,11 @@ export class TestRail {
       data: JSON.stringify({results: results}),
     })
         .then((response: any) => {
-          TestRailLogger.log('Test cases submitted to test run.');
+          console.log(chalk.green('Results added to test run.'));
           return response.data;
         })
         .catch((error: any) => {
-          TestRailLogger.log(error);
-          TestRailLogger.log('Test case ' + '_res[0].case_id ' + ' was not found in the test run');
+          console.log(chalk.red('Failed to add results to TestRail. Response message - ' + error));
         });
   };
   public uploadAttachment (resultId: number, path: string) {
