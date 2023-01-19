@@ -1,13 +1,14 @@
+"use strict";
 const chalk = require('chalk');
 const TestRailLogger = {
-  log: function(text) {
-    console.log('\n', chalk.magenta.underline.bold('(TestRail Reporter)'));
-    console.log('\n', ' - ' + text, '\n');
-  },
-  warn: function(text) {
-    console.log('\n', chalk.magenta.underline.bold('(TestRail Reporter)'));
-    console.warn('\n', ' - ' + text, '\n');
-  },
+    log: (text) => {
+        console.log('\n', chalk.magenta.underline.bold('(TestRail Reporter)'));
+        console.log('\n', ' - ' + text, '\n');
+    },
+    warn: (text) => {
+        console.log('\n', chalk.magenta.underline.bold('(TestRail Reporter)'));
+        console.warn('\n', ' - ' + text, '\n');
+    }
 };
 module.exports = TestRailLogger;
-// # sourceMappingURL=testrail.logger.js.map
+//# sourceMappingURL=testrail.logger.js.map

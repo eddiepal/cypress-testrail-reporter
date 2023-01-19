@@ -1,47 +1,48 @@
 const fs = require('fs');
 
-var cacheFileName = 'testrail-cache.txt';
-var cacheData = {};
-var fileExists = () => {
-    return fs.existsSync(cacheFileName);
+const cacheFileName = 'testrail-cache.txt';
+let cacheData: any = {};
+const fileExists = function() {
+  return fs.existsSync(cacheFileName);
 };
-var createFile = () => {
-    fs.writeFileSync(cacheFileName, '');
+const createFile = function() {
+  fs.writeFileSync(cacheFileName, '');
 };
-var persist = () => {
-    fs.writeFileSync(cacheFileName, JSON.stringify(cacheData), {
-        flag: 'w'
-    });
+const persist = function() {
+  fs.writeFileSync(cacheFileName, JSON.stringify(cacheData), {
+    flag: 'w',
+  });
 };
-var load = () => {
-    if (!fileExists()) {
-        createFile();
-    }
-    var dataStr = fs.readFileSync(cacheFileName);
-    if (dataStr && dataStr != '') {
-        cacheData = JSON.parse(dataStr);
-    } else {
-        cacheData = {};
-    }
+const load = function() {
+  if (!fileExists()) {
+    createFile();
+  }
+  const dataStr = fs.readFileSync(cacheFileName);
+  if (dataStr && dataStr !== '') {
+    cacheData = JSON.parse(dataStr);
+  }
+  else {
+    cacheData = {};
+  }
 };
-
 const TestRailCache = {
-    store: (key, val) => {
-        cacheData[key] = val;
-        persist();
-    },
-    retrieve: (key) => {
-        load();
-        return cacheData[key];
-    },
-    purge: () => {
-        if (fileExists()) {
-            fs.unlink(cacheFileName, (err) => {
-                if (err) throw err;
-            });
+  store: function(key: any, val: any) {
+    cacheData[key] = val;
+    persist();
+  },
+  retrieve: function(key: any) {
+    load();
+    return cacheData[key];
+  },
+  purge: function() {
+    if (fileExists()) {
+      fs.unlink(cacheFileName, (err: any) => {
+        if (err) {
+          throw err;
         }
-        cacheData = {};
+      });
     }
+    cacheData = {};
+  },
 };
-
 module.exports = TestRailCache;

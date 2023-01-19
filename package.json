@@ -20,8 +20,14 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "clean": "rimraf dist",
-    "build": "npm run clean && npm run tsc"
+    "clean": "gts clean",
+    "build": "npm run clean && npm run tsc",
+    "lint": "gts lint",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prepare": "npm.cmd run compile",
+    "pretest": "npm.cmd run compile",
+    "posttest": "npm.cmd run lint"
   },
   "dependencies": {
     "axios": "^0.21.1",
@@ -36,12 +42,19 @@
   "devDependencies": {
     "@types/chai": "^3.5.0",
     "@types/mocha": "^8.2.2",
-    "@types/node": "^14.14.41",
+    "@types/node": "^14.11.2",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
     "chai": "^3.5.0",
     "eslint": "^8.32.0",
     "eslint-config-google": "^0.14.0",
+    "eslint-config-standard-with-typescript": "^30.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1",
     "rimraf": "^2.7.1",
-    "typescript": "^4.2.4"
+    "typescript": "~4.7.0",
+    "gts": "^3.1.1"
   },
   "homepage": "https://github.com/eddiepal/cypress-testrail-reporter#readme"
 }
