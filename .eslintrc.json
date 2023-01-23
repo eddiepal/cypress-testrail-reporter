@@ -10,6 +10,7 @@
     "max-len": ["error", {"code": 120}],
     "linebreak-style": ["error", "windows"],
     "prettier/prettier": 0,
-    "spaced-comment": ["error", "always"]
+    "spaced-comment": ["error", "always"],
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }

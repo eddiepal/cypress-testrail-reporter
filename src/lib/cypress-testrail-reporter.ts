@@ -1,4 +1,4 @@
-import { reporters } from 'mocha';
+import { reporters, Runner } from 'mocha';
 import * as moment from 'moment';
 import { TestRail } from './testrail';
 import { titleToCaseIds } from './shared';
@@ -6,7 +6,7 @@ import { Status, TestRailResult } from './testrail.interface';
 import { TestRailValidation } from './testrail.validation';
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
-const deasync = require('deasync');
+require('deasync');
 const chalk = require('chalk');
 const runCounter = 1;
 
@@ -17,27 +17,27 @@ export class CypressTestRailReporter extends reporters.Spec {
     private runId: number | undefined;
     private reporterOptions: any;
     private suiteId: any = [];
-    private groupId: string = '';
     private caseIds: number[] = [];
     private caseResults: TestRailResult[] = [];
 
-    constructor(runner: any, options: any) {
+    constructor(runner: Runner, options: any) {
       super(runner);
 
       this.reporterOptions = options.reporterOptions;
 
-      if (process.env.CYPRESS_TESTRAIL_REPORTER_USERNAME) {
-        this.reporterOptions.username = process.env.CYPRESS_TESTRAIL_REPORTER_USERNAME;
-      }
-      if (process.env.CYPRESS_TESTRAIL_REPORTER_PASSWORD) {
-        this.reporterOptions.password = process.env.CYPRESS_TESTRAIL_REPORTER_PASSWORD;
-      }
-      if (process.env.CYPRESS_TESTRAIL_REPORTER_RUNNAME) {
-        this.reporterOptions.runName = process.env.CYPRESS_TESTRAIL_REPORTER_RUNNAME;
-      }
-      if (process.env.CYPRESS_TESTRAIL_REPORTER_GROUPID) {
-        this.reporterOptions.groupId = process.env.CYPRESS_TESTRAIL_REPORTER_GROUPID;
-      }
+      const reporterEnvKeys = [
+        'CYPRESS_TESTRAIL_REPORTER_USERNAME',
+        'CYPRESS_TESTRAIL_REPORTER_PASSWORD',
+        'CYPRESS_TESTRAIL_REPORTER_RUNNAME',
+        'CYPRESS_TESTRAIL_REPORTER_GROUPID'
+      ];
+
+      reporterEnvKeys.forEach((key) => {
+        if (process.env[key]) {
+            this.reporterOptions[key.replace('CYPRESS_TESTRAIL_REPORTER_', '').toLowerCase()] = process.env[key];
+        }
+      });
+
       if (process.env.CYPRESS_TESTRAIL_RUN_ID) {
         TestRailCache.store('runId', process.env.CYPRESS_TESTRAIL_RUN_ID);
       }
@@ -50,12 +50,17 @@ export class CypressTestRailReporter extends reporters.Spec {
        * if we are passing suiteId as a part of this file than we assign value to variable
        * usually this is the case for single suite projects
        */
-       this.testRailValidation.validateReporterOptions(this.reporterOptions);
+      this.testRailValidation.validateReporterOptions(this.reporterOptions);
+
       if (this.reporterOptions.suiteId) {
-        this.suiteId = this.reporterOptions.suiteId;
-      }
-      if (this.reporterOptions.groupId) {
-        this.groupId = this.reporterOptions.groupId;
+        this.testRailApi.getSuite(this.reporterOptions.suiteId)
+        .then((resBody: any) => {
+          console.log(chalk.green(`Suite ID ${resBody.id} will be used for th test run.`));
+          this.suiteId = this.reporterOptions.suiteId;
+        })
+        .catch((error: any) => {
+            throw new Error(`Failed to retrieve test suite. Response message - ${error})`);
+        });
       }
       if (this.reporterOptions.runId) {
         TestRailCache.store('runId', this.reporterOptions.runId);
@@ -154,7 +159,6 @@ export class CypressTestRailReporter extends reporters.Spec {
     // TODO: refactor to work with request changes
     // let _a;
     // let filePath;
-    const listGroupIds = this.reporterOptions.groupId;
     let serverCaseIds: number[] = [];
     let done = false;
 
@@ -167,10 +171,12 @@ export class CypressTestRailReporter extends reporters.Spec {
 
     (async () => {
       if (this.reporterOptions.includeAllInTestRun === false) {
-        if (listGroupIds) {
-          const groupIDS = listGroupIds.toString().split(',');
-          for (let i = 0; i < groupIDS.length; i++) {
-            const subCaseIds = await this.testRailApi.getCases(this.reporterOptions.suiteId, groupIDS[i]);
+        if (this.reporterOptions.groupIds) {
+          for (let i = 0; i < this.reporterOptions.groupIds.length; i++) {
+            const subCaseIds = await this.testRailApi.getCases(
+              this.reporterOptions.suiteId,
+              this.reporterOptions.groupIds[i]
+            );
             serverCaseIds = Array.prototype.concat(serverCaseIds, subCaseIds);
           }
         } else {
@@ -194,7 +200,8 @@ export class CypressTestRailReporter extends reporters.Spec {
       }
       // TODO: refactor to work with request changes
       // (_a = this.results).push.apply(_a, caseResults);
-      const publishedResults = await this.testRailApi.publishResults(this.caseResults.filter(
+      // const publishedResults =
+      await this.testRailApi.publishResults(this.caseResults.filter(
           (x) => validCaseIDs.includes(x.case_id))).then(() =>
             {
               done = true;

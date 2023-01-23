@@ -21,6 +21,27 @@ export class TestRail {
     this.urlToPage = options.host + '/index.php?';
   }
 
+  public getSuite = async (suiteId: number) => {
+    console.log(chalk.blue('\nRetrieving test suite from TestRail...'));
+    const url = this.base + '/get_suite/' + suiteId;
+    await axios({
+      method: 'get',
+      url: url,
+      headers: {'Content-Type': 'application/json'},
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+    })
+      .then((response: any) => {
+        console.log(chalk.green('Test suite retrieved.'));
+        return response.data;
+      })
+      .catch((error: any) => {
+        console.log(chalk.red('Failed to retrieve test suite. Response message - ' + error));
+        return error;
+      });
+  };
   public getCases = async (suiteId: number, groupId: number | undefined) => {
     let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
     const initialUrl = this.urlToPage;
@@ -69,14 +90,12 @@ export class TestRail {
   };
   public createRun = async (name: string, host: string, description: string, suiteId: number) => {
     const _host = host;
-    const listGroupIds = this.options.groupId;
 
     if (this.options.includeAllInTestRun === false) {
       this.includeAll = false;
-      if (listGroupIds) {
-        const groupIDS = listGroupIds.toString().split(',');
-        for (let i = 0; i < groupIDS.length; i++) {
-          const subCaseIds = await this.getCases(suiteId, parseInt(groupIDS[i]));
+      if (this.options.groupIds) {
+        for (let i = 0; i < this.options.groupIds.length; i++) {
+          const subCaseIds = await this.getCases(suiteId, parseInt(this.options.groupIds[i]));
           this.caseIds = Array.prototype.concat(this.caseIds, subCaseIds);
         }
       } else {
@@ -163,75 +182,75 @@ export class TestRail {
     })
   }
   // This function will attach failed screenshot on each test result(comment) if founds it
-  public uploadScreenshots = (caseId: string, resultId: number, _path: string) => {
-    const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
+  // public uploadScreenshots = (caseId: string, resultId: number, _path: string) => {
+  //   const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
 
-    fs.readdir(SCREENSHOTS_FOLDER_PATH, (err: any, files: any) => {
-      if (err) {
-        return console.log('Unable to scan screenshots folder: ' + err);
-      }
-      files.forEach((file: any) => {
-        if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
-          try {
-            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
-          } catch (err) {
-            console.log('Screenshot upload error: ', err);
-          }
-        }
-      });
-    });
-  };
-  public uploadDownloads = (caseId: number, resultId: number, _path: string) => {
-    const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
+  //   fs.readdir(SCREENSHOTS_FOLDER_PATH, (err: any, files: any) => {
+  //     if (err) {
+  //       return console.log('Unable to scan screenshots folder: ' + err);
+  //     }
+  //     files.forEach((file: any) => {
+  //       if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
+  //         try {
+  //           this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
+  //         } catch (err) {
+  //           console.log('Screenshot upload error: ', err);
+  //         }
+  //       }
+  //     });
+  //   });
+  // };
+  // public uploadDownloads = (caseId: number, resultId: number, _path: string) => {
+  //   const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
 
-    fs.readdir(DOWNLOADS_FOLDER_PATH, (err: any, files: any) => {
-      if (err) {
-        return console.log('Unable to scan downloads folder: ' + err);
-      }
-      files.forEach((file: any) => {
-        try {
-          this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
-        } catch (err) {
-          console.log('Download upload error: ', err);
-        }
-      });
-    });
-  };
-  public uploadVideos = (caseId: number, resultId: number, _path: string) => {
-    const vPath = _path.replace('integration','videos');
-    const VIDEOS_FOLDER_PATH = vPath.replace(/([^/]*js)$/g, '');
-    const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
+  //   fs.readdir(DOWNLOADS_FOLDER_PATH, (err: any, files: any) => {
+  //     if (err) {
+  //       return console.log('Unable to scan downloads folder: ' + err);
+  //     }
+  //     files.forEach((file: any) => {
+  //       try {
+  //         this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
+  //       } catch (err) {
+  //         console.log('Download upload error: ', err);
+  //       }
+  //     });
+  //   });
+  // };
+  // public uploadVideos = (caseId: number, resultId: number, _path: string) => {
+  //   const vPath = _path.replace('integration','videos');
+  //   const VIDEOS_FOLDER_PATH = vPath.replace(/([^/]*js)$/g, '');
+  //   const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
 
-    const {fork} = require('child_process');
-    const child = fork(__dirname + '/publishVideo.js', {
-      detached: true,
-      stdio: 'inherit',
-      env: Object.assign(process.env, {
-        vName: vidName,
-        vFolder: VIDEOS_FOLDER_PATH,
-        resId: resultId,
-        base: this.base,
-        username: this.options.username,
-        pwd: this.options.password,
-      }),
-    }).unref();
-  };
-  public closeRun = () => {
-    this.runId = TestRailCache.retrieve('runId');
-    axios({
-      method: 'post',
-      url: this.base + '/close_run/' + this.runId,
-      headers: {'Content-Type': 'application/json'},
-      auth: {
-        username: this.options.username,
-        password: this.options.password,
-      },
-    })
-        .then(() => {
-          TestRailLogger.log('Test run closed successfully');
-        })
-        .catch((error: any) => {
-          return console.error(error);
-        });
-  };
+  //   const {fork} = require('child_process');
+  //   const child = fork(__dirname + '/publishVideo.js', {
+  //     detached: true,
+  //     stdio: 'inherit',
+  //     env: Object.assign(process.env, {
+  //       vName: vidName,
+  //       vFolder: VIDEOS_FOLDER_PATH,
+  //       resId: resultId,
+  //       base: this.base,
+  //       username: this.options.username,
+  //       pwd: this.options.password,
+  //     }),
+  //   }).unref();
+  // };
+  // public closeRun = () => {
+  //   this.runId = TestRailCache.retrieve('runId');
+  //   axios({
+  //     method: 'post',
+  //     url: this.base + '/close_run/' + this.runId,
+  //     headers: {'Content-Type': 'application/json'},
+  //     auth: {
+  //       username: this.options.username,
+  //       password: this.options.password,
+  //     },
+  //   })
+  //       .then(() => {
+  //         TestRailLogger.log('Test run closed successfully');
+  //       })
+  //       .catch((error: any) => {
+  //         return console.error(error);
+  //       });
+  // };
 }

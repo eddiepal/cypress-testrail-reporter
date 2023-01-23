@@ -6,7 +6,7 @@ export interface TestRailOptions {
   suiteId: number;
   assignedToId?: number;
   includeAllInTestRun?: boolean;
-  groupId?: number;
+  groupIds?: string[];
   filter?: string;
   typeId?: number;
 }
