@@ -77,7 +77,7 @@ export class TestRail {
           return item.id;
         }));
         newUrl = initialUrl + nextPage;
-        if(nextPage === null) {
+        if (nextPage === null) {
             console.log(chalk.green('Test cases retrieved.\n'));
         }
       })

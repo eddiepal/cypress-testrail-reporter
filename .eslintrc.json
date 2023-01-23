@@ -11,6 +11,7 @@
     "linebreak-style": ["error", "windows"],
     "prettier/prettier": 0,
     "spaced-comment": ["error", "always"],
+    "keyword-spacing": ["error"],
     "@typescript-eslint/no-explicit-any": "off"
   }
 }

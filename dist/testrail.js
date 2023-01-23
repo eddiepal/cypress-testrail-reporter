@@ -15,6 +15,27 @@ class TestRail {
         this.options = options;
         this.includeAll = true;
         this.caseIds = [];
+        this.getSuite = async (suiteId) => {
+            console.log(chalk.blue('\nRetrieving test suite from TestRail...'));
+            const url = this.base + '/get_suite/' + suiteId;
+            await axios({
+                method: 'get',
+                url: url,
+                headers: { 'Content-Type': 'application/json' },
+                auth: {
+                    username: this.options.username,
+                    password: this.options.password,
+                },
+            })
+                .then((response) => {
+                console.log(chalk.green('Test suite retrieved.'));
+                return response.data;
+            })
+                .catch((error) => {
+                console.log(chalk.red('Failed to retrieve test suite. Response message - ' + error));
+                return error;
+            });
+        };
         this.getCases = async (suiteId, groupId) => {
             let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
             const initialUrl = this.urlToPage;
@@ -31,8 +52,8 @@ class TestRail {
                 url += '&type_id=' + this.options.typeId;
             }
             newUrl = url + '&limit=250&offset=0';
+            console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
             while (nextPage !== null) {
-                console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
                 await axios({
                     method: 'get',
                     url: newUrl,
@@ -60,13 +81,11 @@ class TestRail {
         };
         this.createRun = async (name, host, description, suiteId) => {
             const _host = host;
-            const listGroupIds = this.options.groupId;
             if (this.options.includeAllInTestRun === false) {
                 this.includeAll = false;
-                if (listGroupIds) {
-                    const groupIDS = listGroupIds.toString().split(',');
-                    for (let i = 0; i < groupIDS.length; i++) {
-                        const subCaseIds = await this.getCases(suiteId, parseInt(groupIDS[i]));
+                if (this.options.groupIds) {
+                    for (let i = 0; i < this.options.groupIds.length; i++) {
+                        const subCaseIds = await this.getCases(suiteId, parseInt(this.options.groupIds[i]));
                         this.caseIds = Array.prototype.concat(this.caseIds, subCaseIds);
                     }
                 }
@@ -134,77 +153,6 @@ class TestRail {
             })
                 .catch((error) => {
                 console.log(chalk.red('Failed to add results to TestRail. Response message - ' + error));
-            });
-        };
-        // This function will attach failed screenshot on each test result(comment) if founds it
-        this.uploadScreenshots = (caseId, resultId, _path) => {
-            const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
-            fs.readdir(SCREENSHOTS_FOLDER_PATH, (err, files) => {
-                if (err) {
-                    return console.log('Unable to scan screenshots folder: ' + err);
-                }
-                files.forEach((file) => {
-                    if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
-                        try {
-                            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH + '/' + file);
-                        }
-                        catch (err) {
-                            console.log('Screenshot upload error: ', err);
-                        }
-                    }
-                });
-            });
-        };
-        this.uploadDownloads = (caseId, resultId, _path) => {
-            const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
-            fs.readdir(DOWNLOADS_FOLDER_PATH, (err, files) => {
-                if (err) {
-                    return console.log('Unable to scan downloads folder: ' + err);
-                }
-                files.forEach((file) => {
-                    try {
-                        this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH + '/' + file);
-                    }
-                    catch (err) {
-                        console.log('Download upload error: ', err);
-                    }
-                });
-            });
-        };
-        this.uploadVideos = (caseId, resultId, _path) => {
-            const vPath = _path.replace('integration', 'videos');
-            const VIDEOS_FOLDER_PATH = vPath.replace(/([^/]*js)$/g, '');
-            const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/', '');
-            const { fork } = require('child_process');
-            const child = fork(__dirname + '/publishVideo.js', {
-                detached: true,
-                stdio: 'inherit',
-                env: Object.assign(process.env, {
-                    vName: vidName,
-                    vFolder: VIDEOS_FOLDER_PATH,
-                    resId: resultId,
-                    base: this.base,
-                    username: this.options.username,
-                    pwd: this.options.password,
-                }),
-            }).unref();
-        };
-        this.closeRun = () => {
-            this.runId = TestRailCache.retrieve('runId');
-            axios({
-                method: 'post',
-                url: this.base + '/close_run/' + this.runId,
-                headers: { 'Content-Type': 'application/json' },
-                auth: {
-                    username: this.options.username,
-                    password: this.options.password,
-                },
-            })
-                .then(() => {
-                TestRailLogger.log('Test run closed successfully');
-            })
-                .catch((error) => {
-                return console.error(error);
             });
         };
         this.base = `${options.host}/index.php?/api/v2`;

@@ -1,4 +1,4 @@
-import { reporters } from 'mocha';
+import { reporters, Runner } from 'mocha';
 export declare class CypressTestRailReporter extends reporters.Spec {
     private results;
     private testRailApi;
@@ -6,10 +6,9 @@ export declare class CypressTestRailReporter extends reporters.Spec {
     private runId;
     private reporterOptions;
     private suiteId;
-    private groupId;
     private caseIds;
     private caseResults;
-    constructor(runner: any, options: any);
+    constructor(runner: Runner, options: any);
     /**
      * @param {int} status The test status.
      * @param {object} test The test object.
