@@ -1,23 +1,23 @@
 "use strict";
-const fs = require('fs');
-const cacheFileName = 'testrail-cache.txt';
-let cacheData = {};
-const fileExists = function () {
+var fs = require('fs');
+var cacheFileName = 'testrail-cache.txt';
+var cacheData = {};
+var fileExists = function () {
     return fs.existsSync(cacheFileName);
 };
-const createFile = function () {
+var createFile = function () {
     fs.writeFileSync(cacheFileName, '');
 };
-const persist = function () {
+var persist = function () {
     fs.writeFileSync(cacheFileName, JSON.stringify(cacheData), {
         flag: 'w',
     });
 };
-const load = function () {
+var load = function () {
     if (!fileExists()) {
         createFile();
     }
-    const dataStr = fs.readFileSync(cacheFileName);
+    var dataStr = fs.readFileSync(cacheFileName);
     if (dataStr && dataStr !== '') {
         cacheData = JSON.parse(dataStr);
     }
@@ -25,7 +25,7 @@ const load = function () {
         cacheData = {};
     }
 };
-const TestRailCache = {
+var TestRailCache = {
     store: function (key, val) {
         cacheData[key] = val;
         persist();
@@ -36,7 +36,7 @@ const TestRailCache = {
     },
     purge: function () {
         if (fileExists()) {
-            fs.unlink(cacheFileName, (err) => {
+            fs.unlink(cacheFileName, function (err) {
                 if (err) {
                     throw err;
                 }
