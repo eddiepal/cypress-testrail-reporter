@@ -1,11 +1,17 @@
 {
-  "extends": "./node_modules/gts/",
+  "extends": [
+    "./node_modules/gts/",
+    "plugin:mocha/recommended"
+  ],
   "env": {
     "browser": true,
     "commonjs": true,
     "es2021": true,
     "node": true
   },
+  "plugins": [
+    "mocha"
+  ],
   "rules": {
     "max-len": ["error", {"code": 120}],
     "linebreak-style": ["error", "windows"],
@@ -14,5 +20,13 @@
     "node/no-unpublished-import": ["error", {
       "allowModules": ["chai"]
     }]
-  }
+  },
+  "overrides": [
+    {
+        "files": ["test/**/*.js"],
+        "rules": {
+          "prefer-arrow-callback": "off"
+        }
+    }
+]
 }
