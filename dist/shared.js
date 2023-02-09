@@ -7,11 +7,11 @@ exports.titleToCaseIds = void 0;
  * @returns {any}
  */
 function titleToCaseIds(title) {
-    const caseIds = [];
-    const testCaseIdRegExp = /\bT?C(\d+)\b/g;
-    let m;
+    var caseIds = [];
+    var testCaseIdRegExp = /\bT?C(\d+)\b/g;
+    var m;
     while ((m = testCaseIdRegExp.exec(title)) !== null) {
-        const caseId = parseInt(m[1]);
+        var caseId = parseInt(m[1]);
         caseIds.push(caseId);
     }
     return caseIds;

@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TestRailValidation = void 0;
-const TestRailLogger = require('./testrail.logger');
-class TestRailValidation {
-    constructor(options) {
+var TestRailLogger = require('./testrail.logger');
+var TestRailValidation = /** @class */ (function () {
+    function TestRailValidation(options) {
         this.options = options;
     }
-    validateReporterOptions(reporterOptions) {
+    TestRailValidation.prototype.validateReporterOptions = function (reporterOptions) {
         if (!reporterOptions) {
             throw new Error('Missing reporterOptions in cypress.json');
         }
@@ -18,23 +18,23 @@ class TestRailValidation {
             this.validate(reporterOptions, 'suiteId');
         }
         return reporterOptions;
-    }
-    validate(options, name) {
+    };
+    TestRailValidation.prototype.validate = function (options, name) {
         if (options[name] === null) {
-            throw new Error(`Missing ${name} value. Please update options in cypress.json`);
+            throw new Error("Missing ".concat(name, " value. Please update options in cypress.json"));
         }
-    }
+    };
     /**
      * This function will validate do we pass suiteId as a CLI agrument as a part of command line execution
      * Example:
      * CYPRESS_ENV="testRailSuiteId=1"
      * npx cypress run --env="${CYPRESS_ENV}"
      */
-    validateCLIArguments() {
+    TestRailValidation.prototype.validateCLIArguments = function () {
         // Read and store cli arguments into array
-        const cliArgs = process.argv.slice(2);
+        var cliArgs = process.argv.slice(2);
         // Search array for a specific string and store into variable
-        let index, value, result;
+        var index, value, result;
         for (index = 0; index < cliArgs.length; ++index) {
             value = cliArgs[index];
             if (value.includes('testRailSuiteId') === true) {
@@ -47,7 +47,7 @@ class TestRailValidation {
              * Search for specific variable in case that previous command contains multiple results
              * Split variables
              */
-            const resultArrayArgs = result.split(/,/);
+            var resultArrayArgs = result.split(/,/);
             for (index = 0; index < resultArrayArgs.length; ++index) {
                 value = resultArrayArgs[index];
                 if (value.includes('testRailSuiteId') === true) {
@@ -56,15 +56,16 @@ class TestRailValidation {
                 }
             }
             // Split variable and value
-            const resultArray = result.split(/=/);
+            var resultArray = result.split(/=/);
             // Find value of suiteId and store it in envVariable
-            const suiteId = resultArray.find(el => el.length < 15);
+            var suiteId = resultArray.find(function (el) { return el.length < 15; });
             if (suiteId.length !== 0) {
-                TestRailLogger.log(`Following suiteId has been set in runtime environment variables: ${suiteId}`);
+                TestRailLogger.log("Following suiteId has been set in runtime environment variables: ".concat(suiteId));
             }
             return suiteId;
         }
-    }
-}
+    };
+    return TestRailValidation;
+}());
 exports.TestRailValidation = TestRailValidation;
 //# sourceMappingURL=testrail.validation.js.map

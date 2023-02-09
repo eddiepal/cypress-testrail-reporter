@@ -4,7 +4,7 @@
  * @returns {any}
  */
  export function titleToCaseIds(title: string): number[] {
-  const caseIds = [];
+  const caseIds: number[] = [];
   const testCaseIdRegExp = /\bT?C(\d+)\b/g;
   let m;
   while ((m = testCaseIdRegExp.exec(title)) !== null) {
