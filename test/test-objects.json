@@ -1,0 +1,80 @@
+[
+    {
+        "caseId": "C1233",
+        "title": "Passed test with a valid case ID",
+        "duration": "1000",
+        "status": "Passed",
+        "existsInTestRail": true
+    },
+    {
+        "caseId": "C1234",
+        "title": "Passed test with an invalid case ID",
+        "duration": "1000",
+        "status": "Passed",
+        "existsInTestRail": false
+    },
+    {
+        "caseId": null,
+        "title": "Passed test with no case ID",
+        "duration": "1000",
+        "status": "Passed",
+        "existsInTestRail": false
+    },
+    {
+        "caseId": "C1236",
+        "title": "Failed test with a valid case ID",
+        "duration": "1000",
+        "status": "Failed",
+        "error" : {
+            "message": "Test failed"
+        },
+        "existsInTestRail": true
+    },
+    {
+        "caseId": "C1237",
+        "title": "Failed test with an invalid case ID",
+        "duration": "4000",
+        "status": "Failed",
+        "error" : {
+            "message": "Test failed"
+        },
+        "existsInTestRail": false
+    },
+    {
+        "caseId": null,
+        "title": "Failed test with no case ID",
+        "duration": "4000",
+        "status": "Failed",
+        "error" : {
+            "message": "Test failed"
+        },
+        "existsInTestRail": false
+    },
+    {
+        "caseId": "C1238",
+        "title": "Retest test with a valid case ID",
+        "duration": "1000",
+        "status": "Retest",
+        "error" : {
+            "message": "Test failed"
+        },
+        "existsInTestRail": true
+    },
+    {
+        "caseId": "C1239",
+        "title": "Retest test with an invalid case ID",
+        "duration": "1000",
+        "status": "Retest",
+        "error" : {
+            "message": "Test failed"
+        },
+        "existsInTestRail": false
+    },
+    {
+        "caseId": null,
+        "title": "Retest test with no case ID",
+        "duration": "1000",
+        "status": "Retest",
+        "existsInTestRail": false
+    }
+]
