@@ -64,9 +64,9 @@ environment variables, this option would be overwritten with it.
 
 **password**: _string_ password or the API key for the aforementioned user. When you set `CYPRESS_TESTRAIL_REPORTER_PASSWORD` in runtime environment variables, this option would be overwritten with it.
 
-**projectId**: _number_ project with the associated tests.
+**projectId**: _number_ project that contains the associated tests.
 
-**suiteId**: _number_ suite with the associated tests. Optional under **cypress.json** file in case that you define **suiteId** under **gitlab-ci.yml** file or set this value in runtime environment varables.
+**suiteId**: _number_ suite that contains the associated tests. Optional under **cypress.json** file in case that you define **suiteId** under **gitlab-ci.yml** file or set this value in runtime environment varables.
 
 **runName**: _string_ (optional) name of the Testrail run. When you set `CYPRESS_TESTRAIL_REPORTER_RUNNAME` in runtime environment variables, this option would be overwritten with it.
 
