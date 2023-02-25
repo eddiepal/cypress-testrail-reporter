@@ -203,7 +203,7 @@ export class TestRail {
     const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
 
     const {fork} = require('child_process');
-    const child = fork(__dirname + '/publishVideo.js', { // eslint-disable-this
+    const child = fork(__dirname + '/publishVideo.js', { /* eslint-disable-line */
       detached: true,
       stdio: 'inherit',
       env: Object.assign(process.env, {
