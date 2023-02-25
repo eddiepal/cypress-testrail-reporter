@@ -39,7 +39,7 @@ jobs:
 
       - name: Run ESLint
         run: npx eslint .
-          --config .eslintrc.js
+          --config .eslintrc.json
           --ext .js,.jsx,.ts,.tsx
           --rule 'max-len:[error, {code:120}]' --rule 'linebreak-style:[error, windows]'
         continue-on-error: true

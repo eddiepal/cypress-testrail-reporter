@@ -6,7 +6,7 @@ import { Status, TestRailResult } from './testrail.interface';
 import { TestRailValidation } from './testrail.validation';
 const TestRailCache = require('./testrail.cache');
 const TestRailLogger = require('./testrail.logger');
-const deasync = require('deasync');
+const deasync = require('deasync'); /* eslint-disable-line */
 const chalk = require('chalk');
 const runCounter = 1;
 
@@ -194,6 +194,8 @@ export class CypressTestRailReporter extends reporters.Spec {
       }
       // TODO: refactor to work with request changes
       // (_a = this.results).push.apply(_a, caseResults);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const publishedResults = await this.testRailApi.publishResults(this.caseResults.filter(
           (x) => validCaseIDs.includes(x.case_id))).then(() =>
             {
