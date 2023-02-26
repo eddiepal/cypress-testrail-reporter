@@ -41,11 +41,5 @@ jobs:
         run: npx eslint .
           --config .eslintrc.json
           --ext .js,.jsx,.ts,.tsx
-          --rule 'max-len:[error, {code:120}]' --rule 'linebreak-style:[error, windows]'
+          --rule 'max-len:[error, {code:120}]'
         continue-on-error: true
-
-      - name: Upload analysis results to GitHub
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: eslint-results.sarif
-          wait-for-processing: true
