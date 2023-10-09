@@ -91,7 +91,7 @@ var TestRail = /** @class */ (function () {
                         _a.label = 1;
                     case 1:
                         if (!(nextPage !== null)) return [3 /*break*/, 3];
-                        console.log('Here 1');
+                        console.log('Here 1.1');
                         return [4 /*yield*/, axios({
                                 method: 'get',
                                 url: newUrl,
@@ -119,7 +119,9 @@ var TestRail = /** @class */ (function () {
                     case 2:
                         _a.sent();
                         return [3 /*break*/, 1];
-                    case 3: return [2 /*return*/, caseIdArray];
+                    case 3:
+                        console.log('Here 3');
+                        return [2 /*return*/, caseIdArray];
                 }
             });
         }); };

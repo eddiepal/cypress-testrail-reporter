@@ -47,7 +47,7 @@ export class TestRail {
 
     console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
     while (nextPage !== null) {
-      console.log('Here 1');
+      console.log('Here 1.1');
       await axios({
         method: 'get',
         url: newUrl,
@@ -80,6 +80,7 @@ export class TestRail {
           return console.error(error);
         });
     }
+    console.log('Here 3')
     return caseIdArray;
   };
   public createRun = async (
