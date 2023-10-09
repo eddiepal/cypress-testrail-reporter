@@ -6,7 +6,7 @@ const TestRailCache = require('./testrail.cache');
 const chalk = require('chalk');
 const FormData = require('form-data');
 require('deasync');
-import { TestRailOptions, TestRailResult } from './testrail.interface';
+import {TestRailOptions, TestRailResult} from './testrail.interface';
 
 export class TestRail {
   private base: string;
@@ -22,7 +22,12 @@ export class TestRail {
   }
 
   public getCases = async (suiteId: number, groupId: number | undefined) => {
-    let url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
+    let url =
+      this.base +
+      '/get_cases/' +
+      this.options.projectId +
+      '&suite_id=' +
+      suiteId;
     const initialUrl = this.urlToPage;
     let caseIdArray: number[] = [];
     let nextPage: String = '';
@@ -42,6 +47,7 @@ export class TestRail {
 
     console.log(chalk.blue('Retrieving relative test cases from TestRail...'));
     while (nextPage !== null) {
+      console.log('Here 1');
       await axios({
         method: 'get',
         url: newUrl,
@@ -50,24 +56,38 @@ export class TestRail {
           username: this.options.username,
           password: this.options.password,
         },
-      }).then((response: any) => {
-        nextPage = response.data._links.next;
-        caseIdArray = caseIdArray.concat(response.data.cases.map((item: any) => {
-          return item.id;
-        }));
-        newUrl = initialUrl + nextPage;
-        if(nextPage === null) {
-            console.log(chalk.green('Test cases retrieved.\n'));
-        }
       })
-          .catch((error: any) => {
-            console.log(chalk.red('\nFailed to retrieve test cases. Response message - ' + error));
-            return console.error(error);
-          });
+        .then((response: any) => {
+          console.log('Here 2');
+
+          nextPage = response.data._links.next;
+          caseIdArray = caseIdArray.concat(
+            response.data.cases.map((item: any) => {
+              return item.id;
+            })
+          );
+          newUrl = initialUrl + nextPage;
+          if (nextPage === null) {
+            console.log(chalk.green('Test cases retrieved.\n'));
+          }
+        })
+        .catch((error: any) => {
+          console.log(
+            chalk.red(
+              '\nFailed to retrieve test cases. Response message - ' + error
+            )
+          );
+          return console.error(error);
+        });
     }
     return caseIdArray;
   };
-  public createRun = async (name: string, host: string, description: string, suiteId: number) => {
+  public createRun = async (
+    name: string,
+    host: string,
+    description: string,
+    suiteId: number
+  ) => {
     const _host = host;
     const listGroupIds = this.options.groupId;
 
@@ -76,7 +96,10 @@ export class TestRail {
       if (listGroupIds) {
         const groupIDS = listGroupIds.toString().split(',');
         for (let i = 0; i < groupIDS.length; i++) {
-          const subCaseIds = await this.getCases(suiteId, parseInt(groupIDS[i]));
+          const subCaseIds = await this.getCases(
+            suiteId,
+            parseInt(groupIDS[i])
+          );
           this.caseIds = Array.prototype.concat(this.caseIds, subCaseIds);
         }
       } else {
@@ -100,16 +123,19 @@ export class TestRail {
         case_ids: this.caseIds,
       }),
     })
-        .then((response: any) => {
-          this.runId = response.data.id;
-          // cache the TestRail Run ID
-          TestRailCache.store('runId', this.runId);
-          const path = 'runs/view/' + this.runId;
-          TestRailLogger.log('Results are published to ' + chalk.magenta(_host + '/index.php?/' + path));
-        })
-        .catch((error: any) => {
-          return console.error(error);
-        });
+      .then((response: any) => {
+        this.runId = response.data.id;
+        // cache the TestRail Run ID
+        TestRailCache.store('runId', this.runId);
+        const path = 'runs/view/' + this.runId;
+        TestRailLogger.log(
+          'Results are published to ' +
+            chalk.magenta(_host + '/index.php?/' + path)
+        );
+      })
+      .catch((error: any) => {
+        return console.error(error);
+      });
   };
   public deleteRun = () => {
     this.runId = TestRailCache.retrieve('runId');
@@ -127,7 +153,9 @@ export class TestRail {
   };
   public publishResults = (results: TestRailResult[]) => {
     this.runId = TestRailCache.retrieve('runId');
-    console.log(chalk.blue('Adding results from current spec file to TestRail...'));
+    console.log(
+      chalk.blue('Adding results from current spec file to TestRail...')
+    );
 
     return axios({
       method: 'post',
@@ -139,31 +167,39 @@ export class TestRail {
       },
       data: JSON.stringify({results: results}),
     })
-        .then((response: any) => {
-          console.log(chalk.green('Results added to test run.'));
-          return response.data;
-        })
-        .catch((error: any) => {
-          console.log(chalk.red('Failed to add results to TestRail. Response message - ' + error));
-        });
+      .then((response: any) => {
+        console.log(chalk.green('Results added to test run.'));
+        return response.data;
+      })
+      .catch((error: any) => {
+        console.log(
+          chalk.red(
+            'Failed to add results to TestRail. Response message - ' + error
+          )
+        );
+      });
   };
-  public uploadAttachment (resultId: number, path: string) {
+  public uploadAttachment(resultId: number, path: string) {
     const form = new FormData();
     form.append('attachment', fs.createReadStream(path));
 
     axios({
-        method: 'post',
-        url: `${this.base}/add_attachment_to_result/${resultId}`,
-        headers: { ...form.getHeaders() },
-        auth: {
-          username: this.options.username,
-          password: this.options.password,
-        },
-        data: form,
-    })
+      method: 'post',
+      url: `${this.base}/add_attachment_to_result/${resultId}`,
+      headers: {...form.getHeaders()},
+      auth: {
+        username: this.options.username,
+        password: this.options.password,
+      },
+      data: form,
+    });
   }
   // This function will attach failed screenshot on each test result(comment) if founds it
-  public uploadScreenshots = (caseId: string, resultId: number, _path: string) => {
+  public uploadScreenshots = (
+    caseId: string,
+    resultId: number,
+    _path: string
+  ) => {
     const SCREENSHOTS_FOLDER_PATH = _path.replace('integration', 'screenshots');
 
     fs.readdir(SCREENSHOTS_FOLDER_PATH, (err: any, files: any) => {
@@ -173,7 +209,10 @@ export class TestRail {
       files.forEach((file: any) => {
         if (file.includes('C' + caseId) && /(failed|attempt)/g.test(file)) {
           try {
-            this.uploadAttachment(resultId, SCREENSHOTS_FOLDER_PATH +'/'+ file);
+            this.uploadAttachment(
+              resultId,
+              SCREENSHOTS_FOLDER_PATH + '/' + file
+            );
           } catch (err) {
             console.log('Screenshot upload error: ', err);
           }
@@ -181,8 +220,13 @@ export class TestRail {
       });
     });
   };
-  public uploadDownloads = (caseId: number, resultId: number, _path: string) => {
-    const DOWNLOADS_FOLDER_PATH = _path.split('cypress')[0] + 'cypress/downloads';
+  public uploadDownloads = (
+    caseId: number,
+    resultId: number,
+    _path: string
+  ) => {
+    const DOWNLOADS_FOLDER_PATH =
+      _path.split('cypress')[0] + 'cypress/downloads';
 
     fs.readdir(DOWNLOADS_FOLDER_PATH, (err: any, files: any) => {
       if (err) {
@@ -190,7 +234,7 @@ export class TestRail {
       }
       files.forEach((file: any) => {
         try {
-          this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH +'/'+ file);
+          this.uploadAttachment(resultId, DOWNLOADS_FOLDER_PATH + '/' + file);
         } catch (err) {
           console.log('Download upload error: ', err);
         }
@@ -198,13 +242,13 @@ export class TestRail {
     });
   };
   public uploadVideos = (caseId: number, resultId: number, _path: string) => {
-    const vPath = _path.replace('integration','videos');
+    const vPath = _path.replace('integration', 'videos');
     const VIDEOS_FOLDER_PATH = vPath.replace(/([^/]*js)$/g, '');
-    const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/','');
+    const vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/', '');
 
     const {fork} = require('child_process');
-    const child = fork(__dirname + '/publishVideo.js', { /* eslint-disable-line */
-      detached: true,
+    const child = fork(__dirname + '/publishVideo.js', {
+      /* eslint-disable-line */ detached: true,
       stdio: 'inherit',
       env: Object.assign(process.env, {
         vName: vidName,
@@ -227,11 +271,11 @@ export class TestRail {
         password: this.options.password,
       },
     })
-        .then(() => {
-          TestRailLogger.log('Test run closed successfully');
-        })
-        .catch((error: any) => {
-          return console.error(error);
-        });
+      .then(() => {
+        TestRailLogger.log('Test run closed successfully');
+      })
+      .catch((error: any) => {
+        return console.error(error);
+      });
   };
 }
