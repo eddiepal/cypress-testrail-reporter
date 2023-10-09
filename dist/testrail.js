@@ -68,7 +68,11 @@ var TestRail = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        url = this.base + '/get_cases/' + this.options.projectId + '&suite_id=' + suiteId;
+                        url = this.base +
+                            '/get_cases/' +
+                            this.options.projectId +
+                            '&suite_id=' +
+                            suiteId;
                         initialUrl = this.urlToPage;
                         caseIdArray = [];
                         nextPage = '';
@@ -87,6 +91,7 @@ var TestRail = /** @class */ (function () {
                         _a.label = 1;
                     case 1:
                         if (!(nextPage !== null)) return [3 /*break*/, 3];
+                        console.log('Here 1');
                         return [4 /*yield*/, axios({
                                 method: 'get',
                                 url: newUrl,
@@ -95,7 +100,9 @@ var TestRail = /** @class */ (function () {
                                     username: this.options.username,
                                     password: this.options.password,
                                 },
-                            }).then(function (response) {
+                            })
+                                .then(function (response) {
+                                console.log('Here 2');
                                 nextPage = response.data._links.next;
                                 caseIdArray = caseIdArray.concat(response.data.cases.map(function (item) {
                                     return item.id;
@@ -169,7 +176,8 @@ var TestRail = /** @class */ (function () {
                             // cache the TestRail Run ID
                             TestRailCache.store('runId', _this.runId);
                             var path = 'runs/view/' + _this.runId;
-                            TestRailLogger.log('Results are published to ' + chalk.magenta(_host + '/index.php?/' + path));
+                            TestRailLogger.log('Results are published to ' +
+                                chalk.magenta(_host + '/index.php?/' + path));
                         })
                             .catch(function (error) {
                             return console.error(error);
@@ -254,7 +262,7 @@ var TestRail = /** @class */ (function () {
             var vidName = vPath.slice(vPath.lastIndexOf('/')).replace('/', '');
             var fork = require('child_process').fork;
             var child = fork(__dirname + '/publishVideo.js', {
-                detached: true,
+                /* eslint-disable-line */ detached: true,
                 stdio: 'inherit',
                 env: Object.assign(process.env, {
                     vName: vidName,
