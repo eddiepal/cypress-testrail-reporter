@@ -15,7 +15,7 @@ freezing test runs, due to the decreased number of API calls.
 - Multi suite project support (set **suiteId=1** in **cypress.json** or set it as a part of runtime environment variables as **testRailSuiteId=1**)
 - Reporting retest status of a test cases - handy in terms of marking tests as flaky (test is reported with retest status for the first try and after second try it passes) Note: cypress retry logic must be enabled for this feature.
 
-### Temporarily removed features
+### Removed features (that likely won't return in this fork)
 - Possibility to upload videos for failed test cases - optional (**allowOnFailureVideoUpload: true**)
 - Possibility to upload downloads folder for all test cases - optional (**allowExportDownloads: true**)
 - Possibility to upload screenshots for failed  test cases - optional (**allowOnFailureScreenshotUpload: true**)
